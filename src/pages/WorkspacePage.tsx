@@ -119,7 +119,7 @@ export const WorkspacePage: React.FC = () => {
     <Layout>
       <div className="h-[calc(100vh-120px)] flex flex-col px-2 md:px-4">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 flex-shrink-0">
+        <div className="bg-white mt-4 rounded-xl shadow-sm border border-gray-200 p-6 mb-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
@@ -141,30 +141,8 @@ export const WorkspacePage: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRefreshWorkspace}
-                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                  title="Ish maydonini yangilash"
-                >
-                  <RefreshCw size={16} className="mr-2" />
-                  Yangilash
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRefreshAllBoards}
-                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                  title="Barcha board'larni yangilash"
-                >
-                  <RefreshCw size={16} className="mr-2" />
-                  Board'lar
-                </Button>
-              </div>
               
-              <div className="border-l border-gray-300 h-8"></div>
+              
               
               <div className="flex items-center space-x-2">
                 <Button

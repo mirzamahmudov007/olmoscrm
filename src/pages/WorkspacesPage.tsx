@@ -225,20 +225,10 @@ export const WorkspacesPage: React.FC = () => {
       <div className="min-h-[calc(100vh-120px)] bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Header */}
-          <div className="text-center mb-12">
-            <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Building2 size={32} className="text-white" />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                Ish Maydonlari
-            </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Lead'laringizni boshqarish uchun ish maydonini tanlang yoki yangisini yarating
-            </p>
-          </div>
+          
 
           {/* Action Button */}
-          <div className="text-center mb-8">
+          <div className="text-end mb-8">
             <Button
               onClick={() => setShowCreateModal(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-4 text-lg"

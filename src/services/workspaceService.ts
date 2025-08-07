@@ -14,6 +14,11 @@ export interface UpdateWorkspaceRequest {
   name: string;
 }
 
+// Edit board uchun interface
+export interface UpdateBoardRequest {
+  name: string;
+}
+
 export const workspaceService = {
   async getWorkspaces(page = 1, size = 10): Promise<PaginatedResponse<Workspace>> {
     const response = await api.get<PaginatedResponse<Workspace>>(
@@ -51,8 +56,28 @@ export const workspaceService = {
     await devApi.post('/board', data);
   },
 
+  // Board'ni tahrirlash
+  async updateBoard(boardId: string, data: UpdateBoardRequest): Promise<void> {
+    await devApi.put(`/board/${boardId}`, data);
+  },
+
+  // Board'ni o'chirish
+  async deleteBoard(boardId: string): Promise<void> {
+    await devApi.delete(`/board/${boardId}`);
+  },
+
   async createLead(data: CreateLeadRequest): Promise<void> {
     await devApi.post('/lead', data);
+  },
+
+  // Lead'ni tahrirlash
+  async updateLead(leadId: string, data: any): Promise<void> {
+    await devApi.put(`/lead/${leadId}`, data);
+  },
+
+  // Lead'ni o'chirish
+  async deleteLead(leadId: string): Promise<void> {
+    await devApi.delete(`/lead/${leadId}`);
   },
 
   async getLeadsByBoard(

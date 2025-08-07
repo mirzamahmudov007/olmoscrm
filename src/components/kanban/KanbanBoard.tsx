@@ -17,10 +17,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Workspace, Lead } from '../../types';
 import { BoardColumnWithPagination } from './BoardColumnWithPagination';
 import { LeadCard } from './LeadCard';
+import { EditBoardModal } from '../modals/EditBoardModal';
 import { workspaceService } from '../../services/workspaceService';
 import { handleApiError } from '../../services/api';
 import { QUERY_KEYS } from '../../config/constants';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
+import { AlertTriangle, Trash2 } from 'lucide-react';
 
 interface KanbanBoardProps {
   workspace: Workspace;
@@ -39,6 +43,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [tempWorkspace, setTempWorkspace] = useState<Workspace | null>(null);
   const [movingLeadId, setMovingLeadId] = useState<string | null>(null);
   const [affectedBoardIds, setAffectedBoardIds] = useState<string[]>([]);
+  
+  // Modal states
+  const [showEditBoardModal, setShowEditBoardModal] = useState(false);
+  const [showDeleteBoardModal, setShowDeleteBoardModal] = useState(false);
+  const [showDeleteLeadModal, setShowDeleteLeadModal] = useState(false);
+  const [selectedBoard, setSelectedBoard] = useState<any>(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  
   const queryClient = useQueryClient();
   
   // Board'larni refetch qilish va leads'ni olish uchun ref'lar
@@ -510,6 +522,63 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
+  // Board edit/delete handlers
+  const handleOpenEditBoardModal = (board: any) => {
+    setSelectedBoard(board);
+    setShowEditBoardModal(true);
+  };
+
+  const handleOpenDeleteBoardModal = (board: any) => {
+    setSelectedBoard(board);
+    setShowDeleteBoardModal(true);
+  };
+
+  // Lead delete handlers
+  const handleOpenDeleteLeadModal = (lead: Lead) => {
+    setSelectedLead(lead);
+    setShowDeleteLeadModal(true);
+  };
+
+  // Delete board mutation
+  const deleteBoardMutation = async (boardId: string) => {
+    try {
+      await workspaceService.deleteBoard(boardId);
+      
+      // Workspace'ni invalidate qilish
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.WORKSPACE(workspace.id) });
+      
+      toast.success('Board muvaffaqiyatli o\'chirildi! 🗑️');
+      setShowDeleteBoardModal(false);
+      setSelectedBoard(null);
+    } catch (error) {
+      const apiError = handleApiError(error);
+      toast.error(apiError.message);
+    }
+  };
+
+  // Delete lead mutation
+  const deleteLeadMutation = async (leadId: string) => {
+    try {
+      await workspaceService.deleteLead(leadId);
+      
+      // Faqat kerakli board uchun invalidate qilish
+      const leadBoard = findBoardByLeadIdFromWorkspace(leadId, workspace);
+      if (leadBoard) {
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, leadBoard.id),
+          exact: true
+        });
+      }
+      
+      toast.success('Lead muvaffaqiyatli o\'chirildi! 🗑️');
+      setShowDeleteLeadModal(false);
+      setSelectedLead(null);
+    } catch (error) {
+      const apiError = handleApiError(error);
+      toast.error(apiError.message);
+    }
+  };
+
   const findLeadById = (id: string): Lead | null => {
     // BoardRefs'dan lead'ni qidirish
     for (const boardId in boardRefs.current) {
@@ -582,51 +651,155 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const currentWorkspace = tempWorkspace || workspace;
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex gap-3 md:gap-4 overflow-x-auto pb-6 h-full w-full px-3 md:px-4">
-        {currentWorkspace?.boards?.map((board, index) => {
-          // Faqat o'zgargan board'lar uchun isMovingLead va movingLeadId yuborish
-          const isBoardInvolved = isMovingLead && movingLeadId && affectedBoardIds.includes(board.id);
-          
-          return (
-            <div key={board.id} className="w-64 md:w-72 lg:w-80 flex-shrink-0 h-full min-w-64 md:min-w-72 lg:min-w-80">
-              <BoardColumnWithPagination 
-                board={board} 
-                workspaceId={workspace.id}
-                isMovingLead={isBoardInvolved || false}
-                movingLeadId={isBoardInvolved ? movingLeadId : null}
-                onRefetch={(refetch, getLeads) => {
-                  boardRefs.current[board.id] = { refetch, getLeads };
-                }}
-                boardIndex={index}
-                onOpenCreateLeadModal={onOpenCreateLeadModal}
-              />
+    <div className="h-full w-full">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-3 md:gap-4 overflow-x-auto pb-6 h-full w-full px-3 md:px-4">
+          {currentWorkspace?.boards?.map((board, index) => {
+            // Faqat o'zgargan board'lar uchun isMovingLead va movingLeadId yuborish
+            const isBoardInvolved = isMovingLead && movingLeadId && affectedBoardIds.includes(board.id);
+            
+            return (
+              <div key={board.id} className="w-64 md:w-72 lg:w-80 flex-shrink-0 h-full min-w-64 md:min-w-72 lg:min-w-80">
+                <BoardColumnWithPagination 
+                  board={board} 
+                  workspaceId={workspace.id}
+                  isMovingLead={isBoardInvolved || false}
+                  movingLeadId={isBoardInvolved ? movingLeadId : null}
+                  onRefetch={(refetch, getLeads) => {
+                    boardRefs.current[board.id] = { refetch, getLeads };
+                  }}
+                  boardIndex={index}
+                  onOpenCreateLeadModal={onOpenCreateLeadModal}
+                  onOpenEditBoardModal={handleOpenEditBoardModal}
+                  onOpenDeleteBoardModal={handleOpenDeleteBoardModal}
+                  onOpenDeleteLeadModal={handleOpenDeleteLeadModal}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        <DragOverlay>
+          {activeId && activeLead ? (
+            <LeadCard lead={activeLead} onOpenDeleteLeadModal={handleOpenDeleteLeadModal} />
+          ) : null}
+        </DragOverlay>
+
+        {/* Global Loading Overlay */}
+        {isMovingLead && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
+              <LoadingSpinner size="md" />
+              <span className="text-lg font-medium">Lead ko'chirilmoqda...</span>
             </div>
-          );
-        })}
-      </div>
-
-      <DragOverlay>
-        {activeId && activeLead ? (
-          <LeadCard lead={activeLead} />
-        ) : null}
-      </DragOverlay>
-
-      {/* Global Loading Overlay */}
-      {isMovingLead && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <LoadingSpinner size="md" />
-            <span className="text-lg font-medium">Lead ko'chirilmoqda...</span>
           </div>
+        )}
+      </DndContext>
+
+      {/* Edit Board Modal */}
+      <EditBoardModal
+        isOpen={showEditBoardModal}
+        onClose={() => {
+          setShowEditBoardModal(false);
+          setSelectedBoard(null);
+        }}
+        board={selectedBoard}
+        workspaceId={workspace.id}
+      />
+
+      {/* Delete Board Confirmation Modal */}
+      {showDeleteBoardModal && selectedBoard && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md bg-white">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle size={24} className="text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Board'ni O'chirish
+                </h3>
+                <p className="text-gray-600">
+                  "<strong>{selectedBoard.name}</strong>" board'ini o'chirishni xohlaysizmi?
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  Bu amalni qaytarib bo'lmaydi va barcha lead'lar o'chiriladi!
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => deleteBoardMutation(selectedBoard.id)}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <Trash2 size={16} className="mr-2" />
+                  O'chirish
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowDeleteBoardModal(false);
+                    setSelectedBoard(null);
+                  }}
+                  className="flex-1"
+                >
+                  Bekor qilish
+                </Button>
+              </div>
+            </div>
+          </Card>
         </div>
       )}
-    </DndContext>
+
+      {/* Delete Lead Confirmation Modal */}
+      {showDeleteLeadModal && selectedLead && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md bg-white">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle size={24} className="text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Lead'ni O'chirish
+                </h3>
+                <p className="text-gray-600">
+                  "<strong>{selectedLead.name}</strong>" lead'ini o'chirishni xohlaysizmi?
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  Bu amalni qaytarib bo'lmaydi!
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => deleteLeadMutation(selectedLead.id)}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  <Trash2 size={16} className="mr-2" />
+                  O'chirish
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setShowDeleteLeadModal(false);
+                    setSelectedLead(null);
+                  }}
+                  className="flex-1"
+                >
+                  Bekor qilish
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+    </div>
   );
 };

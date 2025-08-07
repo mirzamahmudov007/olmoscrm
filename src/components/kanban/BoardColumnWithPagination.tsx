@@ -18,6 +18,9 @@ interface BoardColumnWithPaginationProps {
   onRefetch?: (refetch: () => void, getLeads: () => any[]) => void;
   boardIndex?: number;
   onOpenCreateLeadModal?: (boardId: string) => void;
+  onOpenEditBoardModal?: (board: Board) => void;
+  onOpenDeleteBoardModal?: (board: Board) => void;
+  onOpenDeleteLeadModal?: (lead: any) => void;
 }
 
 export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps> = ({ 
@@ -27,7 +30,10 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   movingLeadId = null,
   onRefetch,
   boardIndex = 0,
-  onOpenCreateLeadModal
+  onOpenCreateLeadModal,
+  onOpenEditBoardModal,
+  onOpenDeleteBoardModal,
+  onOpenDeleteLeadModal
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -265,7 +271,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
                 <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                   <button
                     onClick={() => {
-                      setShowEditModal(true);
+                      onOpenEditBoardModal ? onOpenEditBoardModal(board) : setShowEditModal(true);
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
@@ -275,7 +281,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
                   </button>
                   <button
                     onClick={() => {
-                      // Delete board logic
+                      onOpenDeleteBoardModal ? onOpenDeleteBoardModal(board) : console.log('Delete board');
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
@@ -309,6 +315,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
               key={lead.id} 
               lead={lead}
               isMoving={isMovingLead && movingLeadId === lead.id}
+              onOpenDeleteLeadModal={onOpenDeleteLeadModal}
             />
           ))}
         </SortableContext>

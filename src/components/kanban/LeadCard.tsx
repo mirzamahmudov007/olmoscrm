@@ -9,9 +9,10 @@ import { Lead } from '../../types';
 interface LeadCardProps {
   lead: Lead;
   isMoving?: boolean;
+  onOpenDeleteLeadModal?: (lead: Lead) => void;
 }
 
-export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false }) => {
+export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false, onOpenDeleteLeadModal }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editedLead, setEditedLead] = useState(lead);
@@ -63,7 +64,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false }) =>
   };
 
   const handleDelete = () => {
-    // Delete logic
+    onOpenDeleteLeadModal ? onOpenDeleteLeadModal(lead) : console.log('Delete lead');
     setShowMenu(false);
   };
 
