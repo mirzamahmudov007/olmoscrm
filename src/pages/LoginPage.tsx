@@ -44,7 +44,6 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         {/* Left Side - Login Form */}
         <Card variant="glass" className="w-full max-w-md mx-auto">
           <div className="text-center mb-8">
@@ -94,70 +93,8 @@ export const LoginPage: React.FC = () => {
             </Button>
           </form>
 
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-500">
-              JWT autentifikatsiya orqali xavfsiz kirish
-            </p>
-          </div>
         </Card>
 
-        {/* Right Side - Features */}
-        <div className="hidden lg:block">
-          <div className="text-center lg:text-left">
-            <div className="w-24 h-24 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto lg:mx-0 mb-8 shadow-xl">
-              <Building2 className="w-12 h-12 text-white" />
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">
-              OlmosCRM - 
-              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                {' '}Lead Boshqaruvi
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 mb-12 leading-relaxed">
-              Mijozlaringizni professional darajada boshqaring. 
-              Kanban board'lar, real-time yangilanishlar va zamonaviy interfeys.
-            </p>
-
-            <div className="space-y-8">
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Lead Boshqaruvi</h3>
-                  <p className="text-gray-600">
-                    Mijoz ma'lumotlarini to'liq boshqaring va ularning holatini kuzating
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Xavfsizlik</h3>
-                  <p className="text-gray-600">
-                    JWT token asosida xavfsiz autentifikatsiya va ma'lumotlaringiz himoyalangan
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-6 h-6 text-white" />
-                </div>
-                <div className="text-left">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Ish Maydonlari</h3>
-                  <p className="text-gray-600">
-                    Ko'p ish maydonlarini boshqaring va har birida alohida board'lar yarating
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

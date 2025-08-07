@@ -43,6 +43,11 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   
   const { setNodeRef, isOver } = useDroppable({
     id: board.id,
+    data: {
+      type: 'board',
+      board: board,
+    },
+    disabled: isMovingLead, // Lead ko'chirilayotganda drop zone'ni o'chirish
   });
   
   // Debug uchun isOver o'zgarishini kuzatish
@@ -151,11 +156,10 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     return colors[boardName as keyof typeof colors] || 'text-gray-700 bg-gray-100';
   };
 
-  // Drag over visual feedback
+  // Drag over visual feedback - optimized
   const getDragOverStyles = () => {
-    if (isOver) {
-      console.log('🎯 Board drag over detected:', board.name);
-      return 'ring-4 ring-blue-400 ring-opacity-50 bg-blue-50/50 shadow-lg border-blue-300';
+    if (isOver && !isMovingLead) {
+      return 'ring-2 ring-blue-400 ring-opacity-70 bg-blue-50/30 shadow-lg border-blue-300 scale-105';
     }
     return '';
   };
@@ -219,10 +223,13 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       ref={setNodeRef}
       className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-200 ${getDragOverStyles()}`}
       style={{
-        transform: isOver ? 'scale(1.02)' : 'scale(1)',
+        transform: isOver && !isMovingLead ? 'scale(1.05)' : 'scale(1)',
         transition: 'all 0.2s ease-in-out',
-        zIndex: isOver ? 10 : 1
+        zIndex: isOver ? 20 : 1
       }}
+      role="region"
+      aria-label={`${board.name} board - lead'larni tashlash uchun`}
+      aria-dropped={isOver ? 'true' : 'false'}
     >
               <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
           <div className="flex items-center justify-between">

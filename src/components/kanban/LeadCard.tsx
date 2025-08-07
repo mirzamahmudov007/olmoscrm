@@ -25,7 +25,13 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false, onOp
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: lead.id });
+  } = useSortable({ 
+    id: lead.id,
+    transition: {
+      duration: 200,
+      easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    },
+  });
 
   // Lead'ni drop zone qilish uchun
   const { setNodeRef: setDroppableRef } = useDroppable({
@@ -74,12 +80,25 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false, onOp
         setNodeRef(node);
         setDroppableRef(node);
       }}
-      style={style}
+      style={{
+        ...style,
+        zIndex: isDragging ? 9999 : 'auto',
+        position: isDragging ? 'relative' : 'static',
+        pointerEvents: isDragging ? 'none' : 'auto',
+      }}
       className={`transform transition-all duration-200 ${
-        isDragging ? 'opacity-50 rotate-3 scale-105' : ''
+        isDragging ? 'opacity-0' : ''
       } ${isMoving ? 'opacity-30 pointer-events-none' : ''}`}
     >
-      <Card className={`cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-blue-300 ${isMoving ? 'bg-gray-100' : ''} p-3`}>
+      <Card 
+        className={`hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-blue-300 ${isMoving ? 'bg-gray-100' : ''} ${isDragging ? 'bg-white shadow-2xl border-blue-400' : ''} p-3`} 
+        style={{ 
+          cursor: 'default',
+          transform: isDragging ? 'rotate(2deg)' : 'none',
+        }}
+        role="article"
+        aria-label={`${editedLead.name} lead karti`}
+      >
         {/* Drop zone indicator */}
         <div className="absolute inset-0 pointer-events-none bg-transparent hover:bg-blue-50/20 transition-colors duration-200" />
         <div className="relative z-10">
@@ -91,13 +110,30 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false, onOp
                 {editedLead.name}
               </h4>
               <div className="flex items-center space-x-1 flex-shrink-0">
-                <div
+                <button
                   {...attributes}
                   {...listeners}
-                  className="text-gray-400 hover:text-gray-600 cursor-grab p-0.5"
+                  className="text-gray-400 hover:text-gray-600 cursor-grab p-1.5 rounded hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 active:cursor-grabbing"
+                  style={{ touchAction: 'none' }}
+                  aria-label={`${editedLead.name} lead'ni sudrab o'tkazish`}
+                  title="Sudrab o'tkazish uchun ushlab turib bosing"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      // Keyboard orqali drag'ni boshlash
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const event = new MouseEvent('mousedown', {
+                        bubbles: true,
+                        cancelable: true,
+                        clientX: rect.left + rect.width / 2,
+                        clientY: rect.top + rect.height / 2,
+                      });
+                      e.currentTarget.dispatchEvent(event);
+                    }
+                  }}
                 >
-                  <GripVertical size={14} />
-                </div>
+                  <GripVertical size={16} />
+                </button>
                 <div className="relative" ref={menuRef}>
                   <button
                     onClick={() => setShowMenu(!showMenu)}

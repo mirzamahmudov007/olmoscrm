@@ -59,7 +59,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5, // Optimal masofa
+        tolerance: 8, // Katta tolerantlik
+        delay: 100, // 100ms delay
       },
     })
   );
@@ -682,9 +684,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           })}
         </div>
 
-        <DragOverlay>
+        <DragOverlay dropAnimation={null}>
           {activeId && activeLead ? (
-            <LeadCard lead={activeLead} onOpenDeleteLeadModal={handleOpenDeleteLeadModal} />
+            <div className="transform rotate-3 scale-105 shadow-2xl">
+              <LeadCard lead={activeLead} onOpenDeleteLeadModal={handleOpenDeleteLeadModal} />
+            </div>
           ) : null}
         </DragOverlay>
 
