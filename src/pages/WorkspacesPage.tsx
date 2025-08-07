@@ -49,6 +49,10 @@ export const WorkspacesPage: React.FC = () => {
     navigate(`${ROUTES.WORKSPACE}/${workspace.id}`);
   };
 
+  const workspaces = workspacesResponse?.data || [];
+
+
+
   if (isLoading) {
     return (
       <Layout>
@@ -69,17 +73,6 @@ export const WorkspacesPage: React.FC = () => {
       </Layout>
     );
   }
-
-  const workspaces = workspacesResponse?.data || [];
-
-  // Agar workspace'lar bo'lsa, birinchi workspace'ga avtomatik o'tish
-  useEffect(() => {
-    if (workspaces.length > 0 && !isLoading) {
-      const firstWorkspace = workspaces[0];
-      console.log('🔄 Avtomatik o\'tish:', firstWorkspace.name, firstWorkspace.id);
-      navigate(`${ROUTES.WORKSPACE}/${firstWorkspace.id}`, { replace: true });
-    }
-  }, [workspaces, navigate, isLoading]);
 
   // Agar workspace'lar bo'sh bo'lsa va loading tugagan bo'lsa, WorkspacesPage ni ko'rsatish
   if (!isLoading && workspaces.length === 0) {
