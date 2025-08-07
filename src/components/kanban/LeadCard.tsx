@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Phone, Calendar, FileText, GripVertical, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Card } from '../ui/Card';
@@ -24,6 +25,11 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false }) =>
     transition,
     isDragging,
   } = useSortable({ id: lead.id });
+
+  // Lead'ni drop zone qilish uchun
+  const { setNodeRef: setDroppableRef } = useDroppable({
+    id: `lead-${lead.id}`,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -72,14 +78,24 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false }) =>
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        setDroppableRef(node);
+      }}
       style={style}
       className={`transform transition-all duration-200 ${
         isDragging ? 'opacity-50 rotate-3 scale-105' : ''
       } ${isMoving ? 'opacity-30 pointer-events-none' : ''}`}
     >
       <Card className={`cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-blue-300 ${isMoving ? 'bg-gray-100' : ''}`}>
-        <div className="space-y-3">
+        {/* Drop zone indicator */}
+        <div className="absolute inset-0 pointer-events-none bg-transparent hover:bg-blue-50/20 transition-colors duration-200" />
+        <div className="relative z-10">
+                    {/* Lead content */}
+          <div className="space-y-3">
+            {/* Lead content starts here */}
+            {/* This div contains all lead information */}
+            {/* Lead name and actions */}
           <div className="flex items-start justify-between">
             <h4 className="font-semibold text-gray-900 text-sm leading-tight">
               {editedLead.name}
@@ -165,6 +181,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false }) =>
               </div>
             </div>
           )}
+        </div>
         </div>
       </Card>
 

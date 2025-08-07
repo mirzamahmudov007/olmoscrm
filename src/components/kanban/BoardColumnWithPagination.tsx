@@ -16,6 +16,7 @@ interface BoardColumnWithPaginationProps {
   isMovingLead?: boolean;
   movingLeadId?: string | null;
   onRefetch?: (refetch: () => void) => void;
+  boardIndex?: number;
 }
 
 export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps> = ({ 
@@ -23,7 +24,8 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   workspaceId,
   isMovingLead = false,
   movingLeadId = null,
-  onRefetch
+  onRefetch,
+  boardIndex = 0
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -34,6 +36,15 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   const { setNodeRef, isOver } = useDroppable({
     id: board.id,
   });
+  
+  // Debug uchun isOver o'zgarishini kuzatish
+  React.useEffect(() => {
+    if (isOver) {
+      console.log('🎯 Board isOver changed to true:', board.name);
+    } else {
+      console.log('🎯 Board isOver changed to false:', board.name);
+    }
+  }, [isOver, board.name]);
 
   // Click outside handler for menu
   useEffect(() => {
@@ -67,6 +78,8 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       return currentPage < lastPage.allPages ? currentPage + 1 : undefined;
     },
     initialPageParam: 1,
+    staleTime: 0, // Har doim yangi ma'lumot olish
+    gcTime: 0, // Cache'ni darhol tozalash
   });
 
   // onRefetch prop'iga refetch funksiyasini o'tkazish
@@ -85,6 +98,14 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   React.useEffect(() => {
     console.log(`📊 Board "${board.name}" query data o'zgarishi:`, data?.pages?.length, 'pages', 'leads:', allLeads.length);
   }, [data, board.name]);
+
+  // Lead ko'chirilganda avtomatik refetch
+  React.useEffect(() => {
+    if (isMovingLead && movingLeadId) {
+      console.log(`🔄 Board "${board.name}" - lead ko'chirilganda avtomatik refetch`);
+      refetch();
+    }
+  }, [isMovingLead, movingLeadId, board.name, refetch]);
 
   // Flatten all leads from all pages
   const allLeads = data?.pages.flatMap(page => page.data) || [];
@@ -119,14 +140,23 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   // Drag over visual feedback
   const getDragOverStyles = () => {
     if (isOver) {
-      return 'ring-4 ring-blue-400 ring-opacity-50 scale-105 transition-all duration-200';
+      console.log('🎯 Board drag over detected:', board.name);
+      return 'ring-4 ring-blue-400 ring-opacity-50 bg-blue-50/50 shadow-lg border-blue-300';
     }
     return '';
   };
 
   if (isLoading) {
     return (
-      <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col ${getDragOverStyles()}`}>
+      <div 
+        ref={setNodeRef}
+        className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col ${getDragOverStyles()}`}
+        style={{
+          transform: isOver ? 'scale(1.02)' : 'scale(1)',
+          transition: 'all 0.2s ease-in-out',
+          zIndex: isOver ? 10 : 1
+        }}
+      >
         <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -147,7 +177,15 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
 
   if (error) {
     return (
-      <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col ${getDragOverStyles()}`}>
+      <div 
+        ref={setNodeRef}
+        className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col ${getDragOverStyles()}`}
+        style={{
+          transform: isOver ? 'scale(1.02)' : 'scale(1)',
+          transition: 'all 0.2s ease-in-out',
+          zIndex: isOver ? 10 : 1
+        }}
+      >
         <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -163,11 +201,21 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   }
 
   return (
-    <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-200 ${getDragOverStyles()}`}>
+    <div 
+      ref={setNodeRef}
+      className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-200 ${getDragOverStyles()}`}
+      style={{
+        transform: isOver ? 'scale(1.02)' : 'scale(1)',
+        transition: 'all 0.2s ease-in-out',
+        zIndex: isOver ? 10 : 1
+      }}
+    >
       <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <h3 className="font-semibold text-sm">{board.name}</h3>
+            <h3 className="font-semibold text-sm">
+              {boardIndex + 1}. {board.name}
+            </h3>
             <div className="flex items-center space-x-1">
               <Users size={14} />
               <span className="text-sm font-medium">{allLeads.length}</span>
@@ -235,7 +283,6 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       </div>
 
       <div
-        ref={setNodeRef}
         className="flex-1 p-4 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
         onScroll={(e) => {
           const target = e.currentTarget;

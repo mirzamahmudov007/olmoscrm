@@ -24,15 +24,7 @@ export const WorkspacePage: React.FC = () => {
 
   const { data: workspace, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.WORKSPACE(id!),
-    queryFn: async () => {
-      const workspaceData = await workspaceService.getWorkspaceById(id!);
-      // Agar board'lar bo'sh bo'lsa, alohida yuklash
-      if (!workspaceData.boards || workspaceData.boards.length === 0) {
-        const boards = await workspaceService.getWorkspaceBoards(id!);
-        return { ...workspaceData, boards };
-      }
-      return workspaceData;
-    },
+    queryFn: () => workspaceService.getWorkspaceById(id!),
     enabled: !!id,
   });
 
