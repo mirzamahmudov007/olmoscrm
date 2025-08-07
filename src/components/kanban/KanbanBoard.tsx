@@ -487,24 +487,21 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       
       toast.success('Lead muvaffaqiyatli ko\'chirildi!');
 
-          // Faqat kerakli board'lar uchun cache invalidate qilish
+          // Optimized cache invalidate - faqat cache tozalash
       console.log('🔄 Optimized cache invalidate boshlandi...');
 
-      // Eski board uchun invalidate
-      await queryClient.invalidateQueries({
+      // Faqat kerakli board'lar uchun cache tozalash
+      queryClient.removeQueries({
         queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, oldBoardId),
-        exact: true,
-        refetchType: 'all'
+        exact: true
       });
-
-      // Yangi board uchun invalidate
-      await queryClient.invalidateQueries({
+      
+      queryClient.removeQueries({
         queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, newBoardId),
-        exact: true,
-        refetchType: 'all'
+        exact: true
       });
 
-      console.log('✅ Faqat kerakli board\'lar invalidated');
+      console.log('✅ Cache tozalandi, avtomatik refetch bo\'ladi');
 
       
     } catch (error) {

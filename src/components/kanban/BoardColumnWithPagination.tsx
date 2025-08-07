@@ -68,7 +68,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     };
   }, []);
 
-  // Infinite query for leads
+  // Infinite query for leads - optimized
   const {
     data,
     fetchNextPage,
@@ -86,10 +86,11 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       return currentPage < lastPage.allPages ? currentPage + 1 : undefined;
     },
     initialPageParam: 1,
-    staleTime: 0, // Har doim yangi ma'lumot olish
-    gcTime: 0, // Cache'ni darhol tozalash
-    refetchOnMount: true, // Mount'da refetch qilish
+    staleTime: 30000, // 30 soniya cache
+    gcTime: 5 * 60 * 1000, // 5 daqiqa cache
+    refetchOnMount: false, // Mount'da refetch qilmaslik
     refetchOnWindowFocus: false, // Window focus'da refetch qilmaslik
+    refetchOnReconnect: false, // Reconnect'da refetch qilmaslik
   });
 
   // onRefetch prop'iga refetch funksiyasini o'tkazish
@@ -112,14 +113,13 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     console.log(`📊 Board "${board.name}" query data o'zgarishi:`, data?.pages?.length, 'pages', 'leads:', allLeads.length);
   }, [data, board.name]);
 
-  // Lead ko'chirilganda avtomatik refetch - faqat kerakli board'lar uchun
-  React.useEffect(() => {
-    if (isMovingLead && movingLeadId) {
-      // Faqat lead ko'chirilgan board'lar uchun refetch
-      console.log(`🔄 Board "${board.name}" - lead ko'chirilganda avtomatik refetch`);
-      refetch();
-    }
-  }, [isMovingLead, movingLeadId, board.name, refetch]);
+  // Lead ko'chirilganda avtomatik refetch - o'chirildi
+  // React.useEffect(() => {
+  //   if (isMovingLead && movingLeadId) {
+  //     console.log(`🔄 Board "${board.name}" - lead ko'chirilganda avtomatik refetch`);
+  //     refetch();
+  //   }
+  // }, [isMovingLead, movingLeadId, board.name, refetch]);
 
   // Flatten all leads from all pages
   const allLeads = data?.pages.flatMap(page => page.data) || [];
