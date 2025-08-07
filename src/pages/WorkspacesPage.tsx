@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -71,6 +71,79 @@ export const WorkspacesPage: React.FC = () => {
   }
 
   const workspaces = workspacesResponse?.data || [];
+
+  // Agar workspace'lar bo'lsa, birinchi workspace'ga avtomatik o'tish
+  useEffect(() => {
+    if (workspaces.length > 0 && !isLoading) {
+      const firstWorkspace = workspaces[0];
+      console.log('🔄 Avtomatik o\'tish:', firstWorkspace.name, firstWorkspace.id);
+      navigate(`${ROUTES.WORKSPACE}/${firstWorkspace.id}`, { replace: true });
+    }
+  }, [workspaces, navigate, isLoading]);
+
+  // Agar workspace'lar bo'sh bo'lsa va loading tugagan bo'lsa, WorkspacesPage ni ko'rsatish
+  if (!isLoading && workspaces.length === 0) {
+    return (
+      <Layout>
+        <div className="max-w-7xl mx-auto space-y-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Workspaces</h1>
+              <p className="text-gray-600 mt-2">
+                Create your first workspace to get started
+              </p>
+            </div>
+            
+            <Button
+              onClick={() => setShowCreateForm(true)}
+              className="shadow-lg"
+            >
+              <Plus size={16} className="mr-2" />
+              New Workspace
+            </Button>
+          </div>
+
+          {showCreateForm && (
+            <Card variant="glass">
+              <form onSubmit={handleCreateWorkspace} className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">Create New Workspace</h3>
+                <div className="flex gap-4">
+                  <Input
+                    value={newWorkspaceName}
+                    onChange={(e) => setNewWorkspaceName(e.target.value)}
+                    placeholder="Enter workspace name"
+                    className="flex-1"
+                  />
+                  <Button type="submit" isLoading={createWorkspaceMutation.isPending}>
+                    Create
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCreateForm(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          )}
+
+          <div className="text-center py-12">
+            <Folder className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No workspaces yet</h3>
+            <p className="text-gray-600 mb-4">
+              Create your first workspace to start managing boards and leads
+            </p>
+            <Button onClick={() => setShowCreateForm(true)}>
+              <Plus size={16} className="mr-2" />
+              Create Workspace
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

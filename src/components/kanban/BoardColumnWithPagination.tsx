@@ -80,6 +80,8 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     initialPageParam: 1,
     staleTime: 0, // Har doim yangi ma'lumot olish
     gcTime: 0, // Cache'ni darhol tozalash
+    refetchOnMount: true, // Mount'da refetch qilish
+    refetchOnWindowFocus: false, // Window focus'da refetch qilmaslik
   });
 
   // onRefetch prop'iga refetch funksiyasini o'tkazish
@@ -106,6 +108,14 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       refetch();
     }
   }, [isMovingLead, movingLeadId, board.name, refetch]);
+
+  // Lead ko'chirish tugaganda ham refetch qilish
+  React.useEffect(() => {
+    if (!isMovingLead) {
+      console.log(`🔄 Board "${board.name}" - lead ko'chirish tugaganda refetch`);
+      refetch();
+    }
+  }, [isMovingLead, board.name, refetch]);
 
   // Flatten all leads from all pages
   const allLeads = data?.pages.flatMap(page => page.data) || [];

@@ -40,6 +40,14 @@ function App() {
                 }
               />
               <Route
+                path={ROUTES.WORKSPACE}
+                element={
+                  <ProtectedRoute>
+                    <WorkspacesPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path={`${ROUTES.WORKSPACE}/:id`}
                 element={
                   <ProtectedRoute>

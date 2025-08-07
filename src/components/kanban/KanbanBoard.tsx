@@ -438,28 +438,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       
       toast.success('Lead muvaffaqiyatli ko\'chirildi!');
 
-          // API call'dan keyin cache'ni to'g'ridan-to'g'ri tozalash
-    console.log('🔄 Query cache tozalash boshlandi...');
+          // API call'dan keyin cache'ni invalidate qilish va refetch qilish
+    console.log('🔄 Query cache invalidate va refetch boshlandi...');
 
-    // Eski board'dan lead'ni olib tashlash uchun cache'ni tozalash
-    await queryClient.removeQueries({
+    // Eski board'dan lead'ni olib tashlash uchun cache'ni invalidate qilish
+    await queryClient.invalidateQueries({
       queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, oldBoardId),
-      exact: true
+      exact: true,
+      refetchType: 'all'
     });
 
-    // Yangi board'ni yangilash uchun cache'ni tozalash
-    await queryClient.removeQueries({
+    // Yangi board'ni yangilash uchun cache'ni invalidate qilish
+    await queryClient.invalidateQueries({
       queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, newBoardId),
-      exact: true
+      exact: true,
+      refetchType: 'all'
     });
 
-    // Workspace cache'ni ham tozalash
-    await queryClient.removeQueries({
+    // Workspace cache'ni ham invalidate qilish
+    await queryClient.invalidateQueries({
       queryKey: QUERY_KEYS.WORKSPACE(workspace.id),
-      exact: true
+      exact: true,
+      refetchType: 'all'
     });
 
-    console.log('✅ All related queries removed from cache');
+    console.log('✅ All related queries invalidated and refetched');
       
       console.log('✅ Query cache invalidate qilindi!');
 
@@ -475,6 +478,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         await boardRefs.current[newBoardId].refetch();
         console.log('🔄 Yangi board refetch completed');
       }
+
       
     } catch (error) {
       const apiError = handleApiError(error);
