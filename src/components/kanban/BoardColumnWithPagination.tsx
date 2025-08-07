@@ -72,13 +72,18 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   // onRefetch prop'iga refetch funksiyasini o'tkazish
   React.useEffect(() => {
     if (onRefetch) {
-      onRefetch(refetch);
+      onRefetch(async () => {
+        console.log(`🔄 Board "${board.name}" refetch boshlandi...`);
+        const result = await refetch();
+        console.log(`✅ Board "${board.name}" refetch tugadi:`, result.data?.pages?.length, 'pages');
+        return result;
+      });
     }
   }, [onRefetch, refetch]);
 
   // Query data o'zgarishini kuzatish va avtomatik yangilash
   React.useEffect(() => {
-    console.log(`📊 Board ${board.name} query data o'zgarishi:`, data?.pages?.length, 'pages');
+    console.log(`📊 Board "${board.name}" query data o'zgarishi:`, data?.pages?.length, 'pages', 'leads:', allLeads.length);
   }, [data, board.name]);
 
   // Flatten all leads from all pages

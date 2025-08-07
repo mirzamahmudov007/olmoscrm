@@ -134,26 +134,18 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Over element board yoki lead ekanligini aniqlash - asosiy workspace'dan
-    let overBoard = findBoardByIdFromWorkspace(overId, workspace);
+    // MUHIM: Active board'ni DOIM asosiy workspace'dan topish kerak
+    // chunki tempWorkspace'da lead allaqachon ko'chirilgan bo'lishi mumkin
+    const activeBoard = findBoardByLeadIdFromWorkspace(activeId, workspace);
+    
+    // Over board'ni tempWorkspace yoki asosiy workspace'dan topish
+    const currentWorkspace = tempWorkspace || workspace;
+    let overBoard = findBoardByIdFromWorkspace(overId, currentWorkspace);
     if (!overBoard) {
-      const overLeadBoard = findBoardByLeadIdFromWorkspace(overId, workspace);
+      const overLeadBoard = findBoardByLeadIdFromWorkspace(overId, currentWorkspace);
       if (overLeadBoard) {
         overBoard = overLeadBoard;
       }
-    }
-
-    // Active board'ni topish - tempWorkspace mavjud bo'lsa, asosiy workspace'dan olish
-    let activeBoard;
-    if (tempWorkspace) {
-      // tempWorkspace mavjud bo'lsa, lead'ning asl joylashuvini aniqlash uchun
-      // asosiy workspace'dan qidiramiz, chunki tempWorkspace'da lead allaqachon ko'chirilgan
-      activeBoard = findBoardByLeadIdFromWorkspace(activeId, workspace);
-      console.log('TEST: tempWorkspace mavjud, asosiy workspace\'dan activeBoard qidirildi:', activeBoard?.name);
-    } else {
-      // tempWorkspace yo'q bo'lsa, currentWorkspace'dan qidiramiz
-      activeBoard = findBoardByLeadId(activeId);
-      console.log('TEST: tempWorkspace yo\'q, currentWorkspace\'dan activeBoard qidirildi:', activeBoard?.name);
     }
 
     console.log('TEST: Found boards - active:', activeBoard?.name, 'over:', overBoard?.name);
@@ -187,12 +179,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const updatedWorkspace = { ...currentWorkspace };
     const boardIndex = updatedWorkspace.boards.findIndex(b => b.id === activeBoard.id);
     
-    const oldIndex = activeBoard.leads.findIndex(l => l.id === activeId);
-    const newIndex = activeBoard.leads.findIndex(l => l.id === overId);
+    // Current workspace'dan board'ni olish
+    const currentBoard = currentWorkspace.boards.find(b => b.id === activeBoard.id);
+    if (!currentBoard) {
+      setTempWorkspace(null);
+      return;
+    }
+    
+    const oldIndex = currentBoard.leads.findIndex(l => l.id === activeId);
+    const newIndex = currentBoard.leads.findIndex(l => l.id === overId);
 
     if (oldIndex !== newIndex) {
       updatedWorkspace.boards[boardIndex].leads = arrayMove(
-        activeBoard.leads,
+        currentBoard.leads,
         oldIndex,
         newIndex
       ).map((lead, index) => ({ ...lead, sortOrder: index }));
@@ -222,35 +221,27 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     setMovingLeadId(leadId);
     
     try {
-      // tempWorkspace yoki asosiy workspace'dan ma'lumotlarni olish
-      const currentWorkspace = tempWorkspace || workspace;
-      const newBoard = currentWorkspace.boards.find(b => b.id === newBoardId);
-      const oldBoard = currentWorkspace.boards.find(b => b.id === oldBoardId);
-      const lead = currentWorkspace.boards
+      // MUHIM: Ma'lumotlarni asosiy workspace'dan olish
+      const oldBoard = workspace.boards.find(b => b.id === oldBoardId);
+      const newBoard = workspace.boards.find(b => b.id === newBoardId);
+      const lead = workspace.boards
         .flatMap(board => board.leads)
         .find(l => l.id === leadId);
 
       if (!newBoard || !oldBoard || !lead) {
+        console.log('TEST: Board yoki lead topilmadi:', { oldBoard: oldBoard?.name, newBoard: newBoard?.name, lead: lead?.name });
         return;
       }
 
-      const newSortOrder = newBoard.leads.length;
+      // tempWorkspace'dan yangi board'ning hozirgi holatini olish
+      const currentWorkspace = tempWorkspace || workspace;
+      const currentNewBoard = currentWorkspace.boards.find(b => b.id === newBoardId);
+      const newSortOrder = currentNewBoard ? currentNewBoard.leads.length - 1 : newBoard.leads.length;
       const oldSortOrder = oldBoard.leads.findIndex(l => l.id === leadId) || 0;
 
       // Lead ko'chirish log'i
       console.log(`🚀 Lead "${lead.name}" ko'chirilmoqda: ${oldBoard.name} → ${newBoard.name}`);
-
-      // Avval query cache'ni invalidate qilish
-      await Promise.all([
-        queryClient.invalidateQueries({ 
-          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, oldBoardId),
-          exact: true
-        }),
-        queryClient.invalidateQueries({ 
-          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, newBoardId),
-          exact: true
-        })
-      ]);
+      console.log(`📊 Sort orders: old=${oldSortOrder}, new=${newSortOrder}`);
 
       // API orqali lead'ni ko'chirish
       console.log('📡 PUT request yuborilmoqda...');
@@ -260,31 +251,36 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       toast.success('Lead muvaffaqiyatli ko\'chirildi!');
 
       // API call'dan keyin yana bir marta invalidate qilish
+      console.log('🔄 Query cache invalidate qilinmoqda...');
       await Promise.all([
         queryClient.invalidateQueries({ 
           queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, oldBoardId),
-          exact: true
+          exact: true,
+          refetchType: 'active'
         }),
         queryClient.invalidateQueries({ 
           queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, newBoardId),
-          exact: true
+          exact: true,
+          refetchType: 'active'
         })
       ]);
+      console.log('✅ Query cache invalidate qilindi!');
 
       // Board'larni manual refetch qilish
       if (boardRefs.current[oldBoardId]) {
         console.log('🔄 Eski board manual refetch:', oldBoardId);
-        boardRefs.current[oldBoardId].refetch();
+        await boardRefs.current[oldBoardId].refetch();
       }
       
       if (boardRefs.current[newBoardId]) {
         console.log('🔄 Yangi board manual refetch:', newBoardId);
-        boardRefs.current[newBoardId].refetch();
+        await boardRefs.current[newBoardId].refetch();
       }
       
     } catch (error) {
       const apiError = handleApiError(error);
       toast.error(apiError.message);
+      console.error('❌ Lead ko\'chirishda xatolik:', error);
     } finally {
       // Temporary workspace'ni tozalash
       setTempWorkspace(null);
