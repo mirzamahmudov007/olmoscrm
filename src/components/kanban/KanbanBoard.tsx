@@ -240,6 +240,18 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       // Lead ko'chirish log'i
       console.log(`🚀 Lead "${lead.name}" ko'chirilmoqda: ${oldBoard.name} → ${newBoard.name}`);
 
+      // Avval query cache'ni invalidate qilish
+      await Promise.all([
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, oldBoardId),
+          exact: true
+        }),
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, newBoardId),
+          exact: true
+        })
+      ]);
+
       // API orqali lead'ni ko'chirish
       console.log('📡 PUT request yuborilmoqda...');
       await workspaceService.moveLead(leadId, newBoardId, newSortOrder, oldSortOrder);
@@ -247,90 +259,37 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       
       toast.success('Lead muvaffaqiyatli ko\'chirildi!');
 
-      // Board'larni avtomatik refetch qilish - yangilangan metod
-      console.log('🔄 Board\'larni yangilash boshlandi...');
-      console.log('📋 refetchBoardsWithAPI chaqirilmoqda...');
-      try {
-        await refetchBoardsWithAPI(oldBoardId, newBoardId);
-        console.log('✅ refetchBoardsWithAPI muvaffaqiyatli bajarildi!');
-      } catch (error) {
-        console.error('❌ refetchBoardsWithAPI xatoligi:', error);
-      }
-      
-      // Temporary workspace'ni tozalash
-      setTempWorkspace(null);
-      
-    } catch (error) {
-      const apiError = handleApiError(error);
-      toast.error(apiError.message);
-      
-      // Temporary workspace'ni tozalash
-      setTempWorkspace(null);
-    } finally {
-      setIsMovingLead(false);
-      setMovingLeadId(null);
-    }
-  };
+      // API call'dan keyin yana bir marta invalidate qilish
+      await Promise.all([
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, oldBoardId),
+          exact: true
+        }),
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, newBoardId),
+          exact: true
+        })
+      ]);
 
-  // Board'larni API orqali yangilash funksiyasi - yangi metod
-  const refetchBoardsWithAPI = async (oldBoardId: string, newBoardId: string) => {
-    try {
-      console.log('🔄 PUT request dan keyin board\'larni yangilash:', oldBoardId, '→', newBoardId);
-      console.log('📋 refetchBoardsWithAPI funksiyasi boshlandi...');
-      
-      // API orqali board'larni yangilash - qo'shimcha API murojaat
-      console.log('📡 API orqali board\'larni yangilash boshlandi...');
-      
-      const promises = [];
-      
-      // Eski board'ni API orqali yangilash
-      console.log('📡 Eski board API murojaat:', oldBoardId);
-      promises.push(
-        workspaceService.getLeadsByBoardInfinite(oldBoardId, 1, 10)
-      );
-      
-      // Yangi board'ni API orqali yangilash
-      console.log('📡 Yangi board API murojaat:', newBoardId);
-      promises.push(
-        workspaceService.getLeadsByBoardInfinite(newBoardId, 1, 10)
-      );
-
-      console.log('📡 API murojaatlar yuborilmoqda...');
-      const [oldBoardData, newBoardData] = await Promise.all(promises);
-      
-      console.log('📊 Eski board ma\'lumotlari:', oldBoardData);
-      console.log('📊 Yangi board ma\'lumotlari:', newBoardData);
-      console.log('✅ API orqali board\'lar yangilandi!');
-      
-      // Board'larni avtomatik refetch qilish (refresh button'lar avtomatik ishlaydi)
+      // Board'larni manual refetch qilish
       if (boardRefs.current[oldBoardId]) {
-        console.log('🔄 Eski board refresh button avtomatik ishlaydi:', oldBoardId);
+        console.log('🔄 Eski board manual refetch:', oldBoardId);
         boardRefs.current[oldBoardId].refetch();
       }
       
       if (boardRefs.current[newBoardId]) {
-        console.log('🔄 Yangi board refresh button avtomatik ishlaydi:', newBoardId);
+        console.log('🔄 Yangi board manual refetch:', newBoardId);
         boardRefs.current[newBoardId].refetch();
       }
-
-      // Infinite query uchun to'g'ri cache yangilash
-      // Eski board'ni invalidate qilish
-      await queryClient.invalidateQueries({ 
-        queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, oldBoardId),
-        exact: true
-      });
-      
-      // Yangi board'ni invalidate qilish
-      await queryClient.invalidateQueries({ 
-        queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, newBoardId),
-        exact: true
-      });
-
-      console.log('✅ Board\'lar muvaffaqiyatli yangilandi!');
-      console.log('🔄 UI invalidate qilindi');
       
     } catch (error) {
-      console.error('❌ Board\'larni yangilashda xatolik:', error);
+      const apiError = handleApiError(error);
+      toast.error(apiError.message);
+    } finally {
+      // Temporary workspace'ni tozalash
+      setTempWorkspace(null);
+      setIsMovingLead(false);
+      setMovingLeadId(null);
     }
   };
 

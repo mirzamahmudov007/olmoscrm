@@ -76,6 +76,11 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     }
   }, [onRefetch, refetch]);
 
+  // Query data o'zgarishini kuzatish va avtomatik yangilash
+  React.useEffect(() => {
+    console.log(`📊 Board ${board.name} query data o'zgarishi:`, data?.pages?.length, 'pages');
+  }, [data, board.name]);
+
   // Flatten all leads from all pages
   const allLeads = data?.pages.flatMap(page => page.data) || [];
   const leadIds = allLeads.map((lead) => lead.id);

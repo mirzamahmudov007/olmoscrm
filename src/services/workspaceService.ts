@@ -70,10 +70,14 @@ export const workspaceService = {
     newSortOrder: number,
     oldSortOrder: number
   ): Promise<void> {
-    await api.put(`/lead/move/${leadId}`, {
+    const response = await api.put(`/lead/move/${leadId}`, {
       boardId: newBoardId,
       newSortOrder,
       oldSortOrder
     });
+    
+    // Response'ni log qilish
+    console.log('📡 Move lead API response:', response.data);
+    return response.data;
   },
 };
