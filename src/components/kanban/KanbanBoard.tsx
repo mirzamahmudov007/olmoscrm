@@ -36,6 +36,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [isMovingLead, setIsMovingLead] = useState(false);
   const [tempWorkspace, setTempWorkspace] = useState<Workspace | null>(null);
   const [movingLeadId, setMovingLeadId] = useState<string | null>(null);
+  const [affectedBoardIds, setAffectedBoardIds] = useState<string[]>([]);
   const queryClient = useQueryClient();
   
   // Board'larni refetch qilish va leads'ni olish uchun ref'lar
@@ -359,6 +360,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       // API orqali sortOrder'ni yangilash
       try {
         await workspaceService.moveLead(activeId, overBoard.id, newIndex, oldIndex);
+        
+        // Faqat joriy board uchun invalidate
+        await queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, overBoard.id),
+          exact: true,
+          refetchType: 'all'
+        });
       } catch (error) {
         const apiError = handleApiError(error);
         toast.error(apiError.message);
@@ -387,6 +395,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     
     setIsMovingLead(true);
     setMovingLeadId(leadId);
+    setAffectedBoardIds([oldBoardId, newBoardId]);
     
     try {
       console.log('TEST: Starting API call preparation');
@@ -464,46 +473,24 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       
       toast.success('Lead muvaffaqiyatli ko\'chirildi!');
 
-          // API call'dan keyin cache'ni invalidate qilish va refetch qilish
-    console.log('🔄 Query cache invalidate va refetch boshlandi...');
+          // Faqat kerakli board'lar uchun cache invalidate qilish
+      console.log('🔄 Optimized cache invalidate boshlandi...');
 
-    // Eski board'dan lead'ni olib tashlash uchun cache'ni invalidate qilish
-    await queryClient.invalidateQueries({
-      queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, oldBoardId),
-      exact: true,
-      refetchType: 'all'
-    });
+      // Eski board uchun invalidate
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, oldBoardId),
+        exact: true,
+        refetchType: 'all'
+      });
 
-    // Yangi board'ni yangilash uchun cache'ni invalidate qilish
-    await queryClient.invalidateQueries({
-      queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, newBoardId),
-      exact: true,
-      refetchType: 'all'
-    });
+      // Yangi board uchun invalidate
+      await queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, newBoardId),
+        exact: true,
+        refetchType: 'all'
+      });
 
-    // Workspace cache'ni ham invalidate qilish
-    await queryClient.invalidateQueries({
-      queryKey: QUERY_KEYS.WORKSPACE(workspace.id),
-      exact: true,
-      refetchType: 'all'
-    });
-
-    console.log('✅ All related queries invalidated and refetched');
-      
-      console.log('✅ Query cache invalidate qilindi!');
-
-      // Board'larni manual refetch qilish (backup sifatida)
-      if (boardRefs.current[oldBoardId]) {
-        console.log('🔄 Eski board manual refetch:', oldBoardId);
-        await boardRefs.current[oldBoardId].refetch();
-        console.log('🔄 Eski board refetch completed');
-      }
-      
-      if (boardRefs.current[newBoardId]) {
-        console.log('🔄 Yangi board manual refetch:', newBoardId);
-        await boardRefs.current[newBoardId].refetch();
-        console.log('🔄 Yangi board refetch completed');
-      }
+      console.log('✅ Faqat kerakli board\'lar invalidated');
 
       
     } catch (error) {
@@ -516,6 +503,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       setTempWorkspace(null);
       setIsMovingLead(false);
       setMovingLeadId(null);
+      setAffectedBoardIds([]);
       console.log('🧹 Cleanup completed');
     }
   };
@@ -600,20 +588,25 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-6 overflow-x-auto pb-6 h-[calc(100vh-200px)]">
-        {currentWorkspace?.boards?.map((board, index) => (
-          <div key={board.id} className="w-80 flex-shrink-0 h-full">
-            <BoardColumnWithPagination 
-              board={board} 
-              workspaceId={workspace.id}
-              isMovingLead={isMovingLead}
-              movingLeadId={movingLeadId}
-              onRefetch={(refetch, getLeads) => {
-                boardRefs.current[board.id] = { refetch, getLeads };
-              }}
-              boardIndex={index}
-            />
-          </div>
-        ))}
+        {currentWorkspace?.boards?.map((board, index) => {
+          // Faqat o'zgargan board'lar uchun isMovingLead va movingLeadId yuborish
+          const isBoardInvolved = isMovingLead && movingLeadId && affectedBoardIds.includes(board.id);
+          
+          return (
+            <div key={board.id} className="w-80 flex-shrink-0 h-full">
+              <BoardColumnWithPagination 
+                board={board} 
+                workspaceId={workspace.id}
+                isMovingLead={isBoardInvolved || false}
+                movingLeadId={isBoardInvolved ? movingLeadId : null}
+                onRefetch={(refetch, getLeads) => {
+                  boardRefs.current[board.id] = { refetch, getLeads };
+                }}
+                boardIndex={index}
+              />
+            </div>
+          );
+        })}
       </div>
 
       <DragOverlay>

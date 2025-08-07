@@ -104,21 +104,14 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     console.log(`📊 Board "${board.name}" query data o'zgarishi:`, data?.pages?.length, 'pages', 'leads:', allLeads.length);
   }, [data, board.name]);
 
-  // Lead ko'chirilganda avtomatik refetch
+  // Lead ko'chirilganda avtomatik refetch - faqat kerakli board'lar uchun
   React.useEffect(() => {
     if (isMovingLead && movingLeadId) {
+      // Faqat lead ko'chirilgan board'lar uchun refetch
       console.log(`🔄 Board "${board.name}" - lead ko'chirilganda avtomatik refetch`);
       refetch();
     }
   }, [isMovingLead, movingLeadId, board.name, refetch]);
-
-  // Lead ko'chirish tugaganda ham refetch qilish
-  React.useEffect(() => {
-    if (!isMovingLead) {
-      console.log(`🔄 Board "${board.name}" - lead ko'chirish tugaganda refetch`);
-      refetch();
-    }
-  }, [isMovingLead, board.name, refetch]);
 
   // Flatten all leads from all pages
   const allLeads = data?.pages.flatMap(page => page.data) || [];

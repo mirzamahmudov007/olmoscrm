@@ -38,8 +38,7 @@ export const CreateLeadModal: React.FC<CreateLeadModalProps> = ({
   const createLeadMutation = useMutation({
     mutationFn: (data: CreateLeadRequest) => workspaceService.createLead(data),
     onSuccess: () => {
-      // Workspace va infinite query'larni invalidate qilish
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.WORKSPACE(workspaceId) });
+      // Faqat kerakli board uchun invalidate qilish
       queryClient.invalidateQueries({ 
         queryKey: QUERY_KEYS.LEADS_INFINITE(workspaceId, boardId),
         exact: true

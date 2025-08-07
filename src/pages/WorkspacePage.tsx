@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Plus, BarChart3, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, BarChart3, RefreshCw, UserPlus } from 'lucide-react';
 import { workspaceService } from '../services/workspaceService';
 import { Layout } from '../components/layout/Layout';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
@@ -10,6 +10,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { CreateLeadFromTopModal } from '../components/modals/CreateLeadFromTopModal';
 import { QUERY_KEYS, ROUTES } from '../config/constants';
 import { handleApiError } from '../services/api';
 import { Workspace } from '../types';
@@ -20,6 +21,7 @@ export const WorkspacePage: React.FC = () => {
   const queryClient = useQueryClient();
   
   const [showCreateBoardForm, setShowCreateBoardForm] = useState(false);
+  const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
 
   const { data: workspace, isLoading, error, refetch } = useQuery({
@@ -57,7 +59,7 @@ export const WorkspacePage: React.FC = () => {
     queryClient.setQueryData(QUERY_KEYS.WORKSPACE(id!), updatedWorkspace);
   };
 
-  // Workspace'ni qayta yuklash funksiyasi
+  // Workspace'ni qayta yuklash funksiyasi (faqat kerak bo'lganda)
   const handleRefreshWorkspace = async () => {
     try {
       await refetch();
@@ -67,12 +69,13 @@ export const WorkspacePage: React.FC = () => {
     }
   };
 
-  // Barcha board'larni refetch qilish
+  // Faqat kerakli board'larni refetch qilish
   const handleRefreshAllBoards = async () => {
     if (!workspace) return;
     
     try {
-      // Barcha board'lar uchun query'larni invalidate qilish
+      // Faqat kerakli board'lar uchun query'larni invalidate qilish
+      // Hozircha barcha board'lar, lekin kelajakda faqat o'zgargan board'lar uchun
       const boardQueries = workspace.boards.map(board => 
         queryClient.invalidateQueries({ 
           queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, board.id),
@@ -172,13 +175,20 @@ export const WorkspacePage: React.FC = () => {
               <RefreshCw size={16} className="mr-2" />
               Refresh Boards
             </Button>
-          <Button
-            onClick={() => setShowCreateBoardForm(true)}
-            className="shadow-lg"
-          >
-            <Plus size={16} className="mr-2" />
-            New Board
-          </Button>
+            <Button
+              onClick={() => setShowCreateLeadModal(true)}
+              className="shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <UserPlus size={16} className="mr-2" />
+              Lead Qo'shish
+            </Button>
+            <Button
+              onClick={() => setShowCreateBoardForm(true)}
+              className="shadow-lg"
+            >
+              <Plus size={16} className="mr-2" />
+              New Board
+            </Button>
           </div>
         </div>
 
@@ -238,6 +248,13 @@ export const WorkspacePage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Create Lead From Top Modal */}
+      <CreateLeadFromTopModal
+        isOpen={showCreateLeadModal}
+        onClose={() => setShowCreateLeadModal(false)}
+        workspace={workspace}
+      />
     </Layout>
   );
 };
