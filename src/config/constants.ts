@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'https://api.olmoscrm.uz/api/v1';
+export const API_BASE_URL = 'https://api.olmoscrm.uz/dev/v1';
 export const DEV_API_BASE_URL = 'https://api.olmoscrm.uz/dev/v1';
 
 export const STORAGE_KEYS = {

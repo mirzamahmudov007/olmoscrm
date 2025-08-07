@@ -163,7 +163,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           zIndex: isOver ? 10 : 1
         }}
       >
-        <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
+        <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <h3 className="font-semibold text-sm">{board.name}</h3>
@@ -192,7 +192,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           zIndex: isOver ? 10 : 1
         }}
       >
-        <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
+        <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <h3 className="font-semibold text-sm">{board.name}</h3>
@@ -216,40 +216,40 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
         zIndex: isOver ? 10 : 1
       }}
     >
-      <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <h3 className="font-semibold text-sm">
-              {boardIndex + 1}. {board.name}
-            </h3>
-            <div className="flex items-center space-x-1">
-              <Users size={14} />
-              <span className="text-sm font-medium">{allLeads.length}</span>
-              {data?.pages[data.pages.length - 1]?.allPages && (
-                <span className="text-xs text-gray-500">
-                  / {data.pages[data.pages.length - 1].allPages * 10}
-                </span>
-              )}
+              <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <h3 className="font-semibold text-sm">
+                {boardIndex + 1}. {board.name}
+              </h3>
+              <div className="flex items-center space-x-1">
+                <Users size={14} />
+                <span className="text-sm font-medium">{allLeads.length}</span>
+                {data?.pages[data.pages.length - 1]?.allPages && (
+                  <span className="text-xs text-gray-500">
+                    / {data.pages[data.pages.length - 1].allPages * 10}
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => refetch()}
+                className="p-1 hover:bg-white/50"
+                title="Refresh board"
+              >
+                <RefreshCw size={16} />
+              </Button>
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => refetch()}
+              onClick={() => setShowCreateModal(true)}
               className="p-1 hover:bg-white/50"
-              title="Refresh board"
             >
-              <RefreshCw size={16} />
+              <Plus size={16} />
             </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setShowCreateModal(true)}
-            className="p-1 hover:bg-white/50"
-          >
-            <Plus size={16} />
-          </Button>
             <div className="relative" ref={menuRef}>
               <Button
                 size="sm"
@@ -289,7 +289,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       </div>
 
       <div
-        className="flex-1 p-4 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+        className="flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
         onScroll={(e) => {
           const target = e.currentTarget;
           const { scrollTop, scrollHeight, clientHeight } = target;

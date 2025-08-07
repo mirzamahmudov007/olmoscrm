@@ -587,13 +587,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-6 overflow-x-auto pb-6 h-[calc(100vh-200px)]">
+      <div className="flex gap-3 md:gap-4 overflow-x-auto pb-6 h-full w-full px-3 md:px-4">
         {currentWorkspace?.boards?.map((board, index) => {
           // Faqat o'zgargan board'lar uchun isMovingLead va movingLeadId yuborish
           const isBoardInvolved = isMovingLead && movingLeadId && affectedBoardIds.includes(board.id);
           
           return (
-            <div key={board.id} className="w-80 flex-shrink-0 h-full">
+            <div key={board.id} className="w-64 md:w-72 lg:w-80 flex-shrink-0 h-full min-w-64 md:min-w-72 lg:min-w-80">
               <BoardColumnWithPagination 
                 board={board} 
                 workspaceId={workspace.id}

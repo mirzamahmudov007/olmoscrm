@@ -135,81 +135,98 @@ export const WorkspacePage: React.FC = () => {
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-120px)] flex flex-col">
+      <div className="h-[calc(100vh-120px)] flex flex-col px-2 md:px-4">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 flex-shrink-0">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate(ROUTES.WORKSPACES)}
-              className="text-gray-600 hover:text-gray-800"
-            >
-              <ArrowLeft size={16} className="mr-2" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{workspace.name}</h1>
-              <p className="text-gray-600 mt-1">
-                Manage your leads across different stages
-              </p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(ROUTES.WORKSPACES)}
+                className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+              >
+                <ArrowLeft size={18} className="mr-2" />
+                Orqaga
+              </Button>
+              <div className="border-l border-gray-300 h-8"></div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{workspace.name}</h1>
+                <p className="text-gray-500 text-sm mt-1">
+                  Lead'larni boshqarish va kuzatish
+                </p>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefreshWorkspace}
-              className="text-gray-600 hover:text-gray-800"
-            >
-              <RefreshCw size={16} className="mr-2" />
-              Refresh
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefreshAllBoards}
-              className="text-gray-600 hover:text-gray-800"
-            >
-              <RefreshCw size={16} className="mr-2" />
-              Refresh Boards
-            </Button>
-            <Button
-              onClick={() => setShowCreateLeadModal(true)}
-              className="shadow-lg bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <UserPlus size={16} className="mr-2" />
-              Lead Qo'shish
-            </Button>
-            <Button
-              onClick={() => setShowCreateBoardForm(true)}
-              className="shadow-lg"
-            >
-              <Plus size={16} className="mr-2" />
-              New Board
-            </Button>
+            
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefreshWorkspace}
+                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                  title="Workspace yangilash"
+                >
+                  <RefreshCw size={16} className="mr-2" />
+                  Yangilash
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefreshAllBoards}
+                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                  title="Barcha board'larni yangilash"
+                >
+                  <RefreshCw size={16} className="mr-2" />
+                  Board'lar
+                </Button>
+              </div>
+              
+              <div className="border-l border-gray-300 h-8"></div>
+              
+              <div className="flex items-center space-x-2">
+                <Button
+                  onClick={() => setShowCreateLeadModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <UserPlus size={16} className="mr-2" />
+                  Lead Qo'shish
+                </Button>
+                <Button
+                  onClick={() => setShowCreateBoardForm(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Yangi Board
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Create Board Form */}
         {showCreateBoardForm && (
-          <Card variant="glass" className="mb-6 flex-shrink-0">
+          <Card className="mb-6 flex-shrink-0 border-2 border-dashed border-green-200 bg-green-50/30">
             <form onSubmit={handleCreateBoard} className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Create New Board</h3>
+              <div className="flex items-center space-x-2 mb-4">
+                <Plus size={20} className="text-green-600" />
+                <h3 className="text-lg font-semibold text-gray-900">Yangi Board Yaratish</h3>
+              </div>
               <div className="flex gap-4">
                 <Input
-                  placeholder="Board name (e.g., 'New Leads', 'In Progress')"
+                  placeholder="Board nomi (masalan: 'Yangi Lead\'lar', 'Jarayonda')"
                   value={newBoardName}
                   onChange={(e) => setNewBoardName(e.target.value)}
                   className="flex-1"
+                  autoFocus
                 />
                 <Button 
                   type="submit" 
                   isLoading={createBoardMutation.isPending}
                   disabled={!newBoardName.trim()}
+                  className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  Create
+                  Yaratish
                 </Button>
                 <Button
                   type="button"
@@ -218,8 +235,9 @@ export const WorkspacePage: React.FC = () => {
                     setShowCreateBoardForm(false);
                     setNewBoardName('');
                   }}
+                  className="text-gray-600 hover:text-gray-800"
                 >
-                  Cancel
+                  Bekor qilish
                 </Button>
               </div>
             </form>
@@ -229,22 +247,32 @@ export const WorkspacePage: React.FC = () => {
         {/* Kanban Board */}
         <div className="flex-1 overflow-hidden">
           {workspace.boards.length === 0 ? (
-            <Card className="text-center py-12 h-full flex items-center justify-center">
-              <div>
-                <BarChart3 size={48} className="mx-auto text-gray-400 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No boards found</h3>
-                <p className="text-gray-600 mb-6">Create your first board to start managing leads</p>
-                <Button onClick={() => setShowCreateBoardForm(true)}>
+            <div className="h-full flex items-center justify-center">
+              <Card className="text-center py-16 max-w-md bg-white/80 backdrop-blur-sm">
+                <div className="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <BarChart3 size={32} className="text-blue-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">Board'lar topilmadi</h3>
+                <p className="text-gray-600 mb-8 leading-relaxed">
+                  Lead'larni boshqarish uchun birinchi board'ingizni yarating. 
+                  Har bir board lead'ning turli bosqichlarini ifodalaydi.
+                </p>
+                <Button 
+                  onClick={() => setShowCreateBoardForm(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
+                >
                   <Plus size={16} className="mr-2" />
-                  Create Board
+                  Birinchi Board Yaratish
                 </Button>
-              </div>
-            </Card>
+              </Card>
+            </div>
           ) : (
-            <KanbanBoard 
-              workspace={workspace} 
-              onUpdateWorkspace={handleUpdateWorkspace}
-            />
+            <div className="h-full w-full">
+              <KanbanBoard 
+                workspace={workspace} 
+                onUpdateWorkspace={handleUpdateWorkspace}
+              />
+            </div>
           )}
         </div>
       </div>

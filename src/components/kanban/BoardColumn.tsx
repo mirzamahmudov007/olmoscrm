@@ -48,11 +48,11 @@ export const BoardColumn: React.FC<BoardColumnProps> = ({ board, workspaceId }) 
   };
 
   return (
-    <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm min-h-[600px] flex flex-col`}>
-      <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl`}>
+          <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm min-h-[500px] flex flex-col`}>
+              <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <h3 className="font-semibold text-sm">{board.name}</h3>
+            <h3 className="font-semibold tesxt-sm">{board.name}</h3>
             <div className="flex items-center space-x-1">
               <Users size={14} />
               <span className="text-sm font-medium">{board.leads.length}</span>
