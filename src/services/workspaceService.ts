@@ -9,6 +9,11 @@ import {
   Board
 } from '../types';
 
+// Edit workspace uchun interface
+export interface UpdateWorkspaceRequest {
+  name: string;
+}
+
 export const workspaceService = {
   async getWorkspaces(page = 1, size = 10): Promise<PaginatedResponse<Workspace>> {
     const response = await api.get<PaginatedResponse<Workspace>>(
@@ -30,6 +35,16 @@ export const workspaceService = {
 
   async createWorkspace(data: CreateWorkspaceRequest): Promise<void> {
     await devApi.post('/workspace', data);
+  },
+
+  // Workspace'ni tahrirlash
+  async updateWorkspace(id: string, data: UpdateWorkspaceRequest): Promise<void> {
+    await devApi.put(`/workspace/${id}`, data);
+  },
+
+  // Workspace'ni o'chirish
+  async deleteWorkspace(id: string): Promise<void> {
+    await devApi.delete(`/workspace/${id}`);
   },
 
   async createBoard(data: CreateBoardRequest): Promise<void> {

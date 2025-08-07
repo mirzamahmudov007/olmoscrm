@@ -7,10 +7,10 @@ import { workspaceService } from '../services/workspaceService';
 import { Layout } from '../components/layout/Layout';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { CreateLeadFromTopModal } from '../components/modals/CreateLeadFromTopModal';
+import { CreateBoardModal } from '../components/modals/CreateBoardModal';
 import { QUERY_KEYS, ROUTES } from '../config/constants';
 import { handleApiError } from '../services/api';
 import { Workspace } from '../types';
@@ -20,39 +20,14 @@ export const WorkspacePage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
-  const [showCreateBoardForm, setShowCreateBoardForm] = useState(false);
+  const [showCreateBoardModal, setShowCreateBoardModal] = useState(false);
   const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
-  const [newBoardName, setNewBoardName] = useState('');
 
   const { data: workspace, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.WORKSPACE(id!),
     queryFn: () => workspaceService.getWorkspaceById(id!),
     enabled: !!id,
   });
-
-  const createBoardMutation = useMutation({
-    mutationFn: workspaceService.createBoard,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.WORKSPACE(id!) });
-      toast.success('Board created successfully!');
-      setNewBoardName('');
-      setShowCreateBoardForm(false);
-    },
-    onError: (error) => {
-      const apiError = handleApiError(error);
-      toast.error(apiError.message);
-    },
-  });
-
-  const handleCreateBoard = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBoardName.trim() || !id) return;
-    
-    createBoardMutation.mutate({ 
-      name: newBoardName.trim(), 
-      workspaceId: id 
-    });
-  };
 
   const handleUpdateWorkspace = (updatedWorkspace: Workspace) => {
     // Optimistic update - UI'ni darhol yangilash
@@ -63,9 +38,9 @@ export const WorkspacePage: React.FC = () => {
   const handleRefreshWorkspace = async () => {
     try {
       await refetch();
-      toast.success('Workspace yangilandi!');
+      toast.success('Ish maydoni yangilandi!');
     } catch (error) {
-      toast.error('Workspace yangilashda xatolik yuz berdi');
+      toast.error('Ish maydoni yangilashda xatolik yuz berdi');
     }
   };
 
@@ -110,7 +85,7 @@ export const WorkspacePage: React.FC = () => {
             onClick={() => navigate(ROUTES.WORKSPACES)}
             className="mt-4"
           >
-            Back to Workspaces
+            Ish maydonlariga qaytish
           </Button>
         </div>
       </Layout>
@@ -121,12 +96,12 @@ export const WorkspacePage: React.FC = () => {
     return (
       <Layout>
         <div className="text-center py-12">
-          <p className="text-gray-600 text-lg">Workspace not found</p>
+          <p className="text-gray-600 text-lg">Ish maydoni topilmadi</p>
           <Button 
             onClick={() => navigate(ROUTES.WORKSPACES)}
             className="mt-4"
           >
-            Back to Workspaces
+            Ish maydonlariga qaytish
           </Button>
         </div>
       </Layout>
@@ -137,7 +112,7 @@ export const WorkspacePage: React.FC = () => {
     <Layout>
       <div className="h-[calc(100vh-120px)] flex flex-col px-2 md:px-4">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 flex-shrink-0">
+        <div className="bg-white rounded-xl mt-4 shadow-sm border border-gray-200 p-6 mb-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
@@ -159,30 +134,8 @@ export const WorkspacePage: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRefreshWorkspace}
-                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                  title="Workspace yangilash"
-                >
-                  <RefreshCw size={16} className="mr-2" />
-                  Yangilash
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRefreshAllBoards}
-                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                  title="Barcha board'larni yangilash"
-                >
-                  <RefreshCw size={16} className="mr-2" />
-                  Board'lar
-                </Button>
-              </div>
               
-              <div className="border-l border-gray-300 h-8"></div>
+              
               
               <div className="flex items-center space-x-2">
                 <Button
@@ -193,7 +146,7 @@ export const WorkspacePage: React.FC = () => {
                   Lead Qo'shish
                 </Button>
                 <Button
-                  onClick={() => setShowCreateBoardForm(true)}
+                  onClick={() => setShowCreateBoardModal(true)}
                   className="bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
                 >
                   <Plus size={16} className="mr-2" />
@@ -203,46 +156,6 @@ export const WorkspacePage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Create Board Form */}
-        {showCreateBoardForm && (
-          <Card className="mb-6 flex-shrink-0 border-2 border-dashed border-green-200 bg-green-50/30">
-            <form onSubmit={handleCreateBoard} className="space-y-4">
-              <div className="flex items-center space-x-2 mb-4">
-                <Plus size={20} className="text-green-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Yangi Board Yaratish</h3>
-              </div>
-              <div className="flex gap-4">
-                <Input
-                  placeholder="Board nomi (masalan: 'Yangi Lead\'lar', 'Jarayonda')"
-                  value={newBoardName}
-                  onChange={(e) => setNewBoardName(e.target.value)}
-                  className="flex-1"
-                  autoFocus
-                />
-                <Button 
-                  type="submit" 
-                  isLoading={createBoardMutation.isPending}
-                  disabled={!newBoardName.trim()}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Yaratish
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    setShowCreateBoardForm(false);
-                    setNewBoardName('');
-                  }}
-                  className="text-gray-600 hover:text-gray-800"
-                >
-                  Bekor qilish
-                </Button>
-              </div>
-            </form>
-          </Card>
-        )}
 
         {/* Kanban Board */}
         <div className="flex-1 overflow-hidden">
@@ -258,7 +171,7 @@ export const WorkspacePage: React.FC = () => {
                   Har bir board lead'ning turli bosqichlarini ifodalaydi.
                 </p>
                 <Button 
-                  onClick={() => setShowCreateBoardForm(true)}
+                  onClick={() => setShowCreateBoardModal(true)}
                   className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
                 >
                   <Plus size={16} className="mr-2" />
@@ -281,6 +194,13 @@ export const WorkspacePage: React.FC = () => {
       <CreateLeadFromTopModal
         isOpen={showCreateLeadModal}
         onClose={() => setShowCreateLeadModal(false)}
+        workspace={workspace}
+      />
+
+      {/* Create Board Modal */}
+      <CreateBoardModal
+        isOpen={showCreateBoardModal}
+        onClose={() => setShowCreateBoardModal(false)}
         workspace={workspace}
       />
     </Layout>

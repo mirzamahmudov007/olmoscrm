@@ -2,10 +2,9 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { X, User, Phone, FileText, MessageSquare } from 'lucide-react';
+import { X } from 'lucide-react';
 import { workspaceService } from '../../services/workspaceService';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 import { Card } from '../ui/Card';
 import { CreateLeadRequest } from '../../types';
 import { handleApiError } from '../../services/api';
@@ -43,7 +42,7 @@ export const CreateLeadModal: React.FC<CreateLeadModalProps> = ({
         queryKey: QUERY_KEYS.LEADS_INFINITE(workspaceId, boardId),
         exact: true
       });
-      toast.success('Lead created successfully!');
+      toast.success('Lead muvaffaqiyatli qo\'shildi!');
       reset();
       onClose();
     },
@@ -69,88 +68,114 @@ export const CreateLeadModal: React.FC<CreateLeadModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-semibold text-gray-900">Add New Lead</h3>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="relative">
-            <User className="absolute left-3 top-8 h-4 w-4 text-gray-400" />
-            <Input
-              label="Full Name"
-              placeholder="Enter lead's full name"
-              className="pl-10"
-              error={errors.name?.message}
-              {...register('name', { 
-                required: 'Name is required',
-                minLength: {
-                  value: 2,
-                  message: 'Name must be at least 2 characters'
-                }
-              })}
-            />
-          </div>
-
-          <div className="relative">
-            <Phone className="absolute left-3 top-8 h-4 w-4 text-gray-400" />
-            <Input
-              label="Phone Number"
-              placeholder="901234567 or 998901234567"
-              className="pl-10"
-              error={errors.phone?.message}
-              {...register('phone', { 
-                required: 'Phone number is required',
-                pattern: {
-                  value: /^(998)?[0-9]{9}$/,
-                  message: 'Please enter a valid Uzbek phone number'
-                }
-              })}
-            />
-          </div>
-
-          <div className="relative">
-            <FileText className="absolute left-3 top-8 h-4 w-4 text-gray-400" />
-            <Input
-              label="Disease/Condition"
-              placeholder="Enter medical condition or concern"
-              className="pl-10"
-              {...register('disease')}
-            />
-          </div>
-
-          <div className="relative">
-            <MessageSquare className="absolute left-3 top-8 h-4 w-4 text-gray-400" />
-            <Input
-              label="Notes"
-              placeholder="Additional notes or comments"
-              className="pl-10"
-              {...register('note')}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button
-              type="button"
-              variant="ghost"
+      <Card className="w-full max-w-md bg-white shadow-2xl">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-semibold text-gray-900">Lead Qo'shish</h3>
+            <button
               onClick={handleClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1"
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              isLoading={createLeadMutation.isPending}
-            >
-              Create Lead
-            </Button>
+              <X size={20} />
+            </button>
           </div>
-        </form>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* F.I.O va Telefon raqami bir qatorda */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  F.I.O
+                </label>
+                <input
+                  {...register('name', { 
+                    required: 'F.I.O kiritish majburiy',
+                    minLength: {
+                      value: 2,
+                      message: 'F.I.O kamida 2 ta harf bo\'lishi kerak'
+                    }
+                  })}
+                  placeholder="To'liq ism familiya"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Telefon raqami
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                    +998
+                  </div>
+                  <input
+                    {...register('phone', { 
+                      required: 'Telefon raqami kiritish majburiy',
+                      pattern: {
+                        value: /^[0-9]{9}$/,
+                        message: 'To\'g\'ri telefon raqamini kiriting (9 ta raqam)'
+                      }
+                    })}
+                    placeholder="901234567"
+                    className="w-full pl-12 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                  {errors.phone && (
+                    <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Kasallik */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Kasallik
+              </label>
+              <input
+                {...register('disease')}
+                placeholder="Kasallik yoki muammo haqida"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            {/* Note */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Batafsil
+              </label>
+              <textarea
+                {...register('note')}
+                placeholder="Batafsil ma'lumotlar, qo'shimcha izohlar..."
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
+                rows={3}
+                style={{ minHeight: '100px' }}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleClose}
+                className="px-6 py-2.5"
+              >
+                Bekor qilish
+              </Button>
+              <Button
+                type="submit"
+                isLoading={createLeadMutation.isPending}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {createLeadMutation.isPending ? 'Qo\'shilmoqda...' : 'Lead Qo\'shish'}
+              </Button>
+            </div>
+          </form>
+        </div>
       </Card>
     </div>
   );
