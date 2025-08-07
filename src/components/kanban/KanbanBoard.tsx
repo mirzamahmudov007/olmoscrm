@@ -175,11 +175,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
     // Agar lead o'z board'ida joylashuvi o'zgartirilgan bo'lsa
     console.log('TEST: Moving within same board');
-    const currentWorkspace = tempWorkspace || workspace;
     const updatedWorkspace = { ...currentWorkspace };
     const boardIndex = updatedWorkspace.boards.findIndex(b => b.id === activeBoard.id);
     
-    // Current workspace'dan board'ni olish
+    // currentWorkspace'dan board'ni olish
     const currentBoard = currentWorkspace.boards.find(b => b.id === activeBoard.id);
     if (!currentBoard) {
       setTempWorkspace(null);
@@ -290,8 +289,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   const findLeadById = (id: string): Lead | null => {
-    const currentWorkspace = tempWorkspace || workspace;
-    
     for (const board of currentWorkspace.boards) {
       const lead = board.leads.find(l => l.id === id);
       if (lead) {
@@ -302,8 +299,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   const findBoardByLeadId = (leadId: string) => {
-    const currentWorkspace = tempWorkspace || workspace;
-    
     for (const board of currentWorkspace.boards) {
       const hasLead = board.leads.some(lead => lead.id === leadId);
       if (hasLead) {
@@ -314,8 +309,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   const findBoardById = (boardId: string) => {
-    const currentWorkspace = tempWorkspace || workspace;
-    
     const board = currentWorkspace.boards.find(board => board.id === boardId);
     return board;
   };
