@@ -98,9 +98,14 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     refetchOnReconnect: false, // Reconnect'da refetch qilmaslik
   });
 
+  // Flatten all leads from all pages
+  const allLeads = data?.pages.flatMap(page => page.data) || [];
+  const leadIds = allLeads.map((lead) => lead.id);
+
   // onRefetch prop'iga refetch funksiyasini o'tkazish
   React.useEffect(() => {
     if (onRefetch) {
+      console.log(`📋 Board "${board.name}" onRefetch callback registered`);
       onRefetch(
         async () => {
           console.log(`🔄 Board "${board.name}" refetch boshlandi...`);
@@ -108,10 +113,13 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           console.log(`✅ Board "${board.name}" refetch tugadi:`, result.data?.pages?.length, 'pages');
           return result;
         },
-        () => allLeads
+        () => {
+          console.log(`📋 Board "${board.name}" getLeads called, leads count:`, allLeads.length);
+          return allLeads;
+        }
       );
     }
-  }, [onRefetch, refetch]);
+  }, [onRefetch, refetch, allLeads]);
 
   // Query data o'zgarishini kuzatish va avtomatik yangilash
   React.useEffect(() => {
@@ -125,10 +133,6 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   //     refetch();
   //   }
   // }, [isMovingLead, movingLeadId, board.name, refetch]);
-
-  // Flatten all leads from all pages
-  const allLeads = data?.pages.flatMap(page => page.data) || [];
-  const leadIds = allLeads.map((lead) => lead.id);
 
   const getColumnColor = (boardName: string) => {
     const colors = {
@@ -159,7 +163,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   // Drag over visual feedback - optimized
   const getDragOverStyles = () => {
     if (isOver && !isMovingLead) {
-      return 'ring-2 ring-blue-400 ring-opacity-70 bg-blue-50/30 shadow-lg border-blue-300 scale-105';
+      return 'ring-2 ring-blue-400 ring-opacity-50 bg-blue-50/20 shadow-md border-blue-300';
     }
     return '';
   };
@@ -223,9 +227,9 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       ref={setNodeRef}
       className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-200 ${getDragOverStyles()}`}
       style={{
-        transform: isOver && !isMovingLead ? 'scale(1.05)' : 'scale(1)',
+        transform: isOver && !isMovingLead ? 'scale(1.02)' : 'scale(1)',
         transition: 'all 0.2s ease-in-out',
-        zIndex: isOver ? 20 : 1
+        zIndex: isOver ? 10 : 1
       }}
       role="region"
       aria-label={`${board.name} board - lead'larni tashlash uchun`}

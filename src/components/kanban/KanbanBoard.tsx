@@ -59,22 +59,29 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Optimal masofa
-        tolerance: 8, // Katta tolerantlik
-        delay: 100, // 100ms delay
+        distance: 3, // Kamroq masofa
+        tolerance: 5, // Optimal tolerantlik
+        delay: 50, // 50ms delay
       },
     })
   );
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    setActiveId(active.id as string);
+    const activeId = active.id as string;
+    setActiveId(activeId);
+
+    console.log('🚀 Drag start - activeId:', activeId);
 
     // Find the active lead
-    const lead = findLeadById(active.id as string);
+    const lead = findLeadById(activeId);
     setActiveLead(lead);
     
-    console.log('TEST: Drag start - lead:', lead?.name);
+    if (lead) {
+      console.log('✅ Drag start - lead found:', lead.name);
+    } else {
+      console.log('❌ Drag start - lead not found for activeId:', activeId);
+    }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -579,17 +586,28 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   const findLeadById = (id: string): Lead | null => {
+    console.log('🔍 findLeadById - searching for leadId:', id);
+    console.log('🔍 boardRefs keys:', Object.keys(boardRefs.current));
+    
     // BoardRefs'dan lead'ni qidirish
     for (const boardId in boardRefs.current) {
       const boardRef = boardRefs.current[boardId];
+      console.log('🔍 checking boardId:', boardId, 'boardRef exists:', !!boardRef);
+      
       if (boardRef && boardRef.getLeads) {
         const leads = boardRef.getLeads();
+        console.log('🔍 boardId:', boardId, 'leads count:', leads.length);
+        console.log('🔍 leads IDs:', leads.map(l => l.id));
+        
         const lead = leads.find(l => l.id === id);
         if (lead) {
+          console.log('✅ Lead found in boardId:', boardId, 'lead name:', lead.name);
           return lead;
         }
       }
     }
+    
+    console.log('❌ Lead not found in any boardRefs');
     return null;
   };
 
@@ -686,7 +704,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
         <DragOverlay dropAnimation={null}>
           {activeId && activeLead ? (
-            <div className="transform rotate-3 scale-105 shadow-2xl">
+            <div className="transform rotate-1 scale-105 shadow-lg">
               <LeadCard lead={activeLead} onOpenDeleteLeadModal={handleOpenDeleteLeadModal} />
             </div>
           ) : null}
