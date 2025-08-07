@@ -19,4 +19,5 @@ export const QUERY_KEYS = {
   WORKSPACES: ['workspaces'],
   WORKSPACE: (id: string) => ['workspace', id],
   LEADS: (boardId: string, page: number) => ['leads', boardId, page],
+  LEADS_INFINITE: (workspaceId: string, boardId: string) => ['leads', 'infinite', workspaceId, boardId],
 } as const;

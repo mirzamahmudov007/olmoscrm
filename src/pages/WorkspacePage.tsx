@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Plus, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Plus, BarChart3, RefreshCw } from 'lucide-react';
 import { workspaceService } from '../services/workspaceService';
 import { Layout } from '../components/layout/Layout';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
@@ -22,9 +22,17 @@ export const WorkspacePage: React.FC = () => {
   const [showCreateBoardForm, setShowCreateBoardForm] = useState(false);
   const [newBoardName, setNewBoardName] = useState('');
 
-  const { data: workspace, isLoading, error } = useQuery({
+  const { data: workspace, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.WORKSPACE(id!),
-    queryFn: () => workspaceService.getWorkspaceById(id!),
+    queryFn: async () => {
+      const workspaceData = await workspaceService.getWorkspaceById(id!);
+      // Agar board'lar bo'sh bo'lsa, alohida yuklash
+      if (!workspaceData.boards || workspaceData.boards.length === 0) {
+        const boards = await workspaceService.getWorkspaceBoards(id!);
+        return { ...workspaceData, boards };
+      }
+      return workspaceData;
+    },
     enabled: !!id,
   });
 
@@ -53,7 +61,38 @@ export const WorkspacePage: React.FC = () => {
   };
 
   const handleUpdateWorkspace = (updatedWorkspace: Workspace) => {
+    // Optimistic update - UI'ni darhol yangilash
     queryClient.setQueryData(QUERY_KEYS.WORKSPACE(id!), updatedWorkspace);
+  };
+
+  // Workspace'ni qayta yuklash funksiyasi
+  const handleRefreshWorkspace = async () => {
+    try {
+      await refetch();
+      toast.success('Workspace yangilandi!');
+    } catch (error) {
+      toast.error('Workspace yangilashda xatolik yuz berdi');
+    }
+  };
+
+  // Barcha board'larni refetch qilish
+  const handleRefreshAllBoards = async () => {
+    if (!workspace) return;
+    
+    try {
+      // Barcha board'lar uchun query'larni invalidate qilish
+      const boardQueries = workspace.boards.map(board => 
+        queryClient.invalidateQueries({ 
+          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, board.id),
+          exact: true
+        })
+      );
+      
+      await Promise.all(boardQueries);
+      toast.success('Barcha board\'lar yangilandi!');
+    } catch (error) {
+      toast.error('Board\'larni yangilashda xatolik yuz berdi');
+    }
   };
 
   if (isLoading) {
@@ -122,6 +161,25 @@ export const WorkspacePage: React.FC = () => {
             </div>
           </div>
           
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefreshWorkspace}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              <RefreshCw size={16} className="mr-2" />
+              Refresh
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefreshAllBoards}
+              className="text-gray-600 hover:text-gray-800"
+            >
+              <RefreshCw size={16} className="mr-2" />
+              Refresh Boards
+            </Button>
           <Button
             onClick={() => setShowCreateBoardForm(true)}
             className="shadow-lg"
@@ -129,6 +187,7 @@ export const WorkspacePage: React.FC = () => {
             <Plus size={16} className="mr-2" />
             New Board
           </Button>
+          </div>
         </div>
 
         {/* Create Board Form */}

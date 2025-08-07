@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Plus, Users, Loader2 } from 'lucide-react';
+import { Plus, Users, Loader2, MoreVertical, Edit, Trash2, Calendar, Phone, RefreshCw } from 'lucide-react';
 import { Board } from '../../types';
 import { LeadCard } from './LeadCard';
 import { Button } from '../ui/Button';
@@ -13,17 +13,41 @@ import { QUERY_KEYS } from '../../config/constants';
 interface BoardColumnWithPaginationProps {
   board: Board;
   workspaceId: string;
+  isMovingLead?: boolean;
+  movingLeadId?: string | null;
+  onRefetch?: (refetch: () => void) => void;
 }
 
 export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps> = ({ 
   board, 
-  workspaceId 
+  workspaceId,
+  isMovingLead = false,
+  movingLeadId = null,
+  onRefetch
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [newBoardName, setNewBoardName] = useState(board.name);
+  const menuRef = useRef<HTMLDivElement>(null);
   
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: board.id,
   });
+
+  // Click outside handler for menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Infinite query for leads
   const {
@@ -32,34 +56,29 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     hasNextPage,
     isFetchingNextPage,
     isLoading,
-    error
+    error,
+    refetch
   } = useInfiniteQuery({
-    queryKey: [...QUERY_KEYS.LEADS(board.id, 1), 'infinite'],
+    queryKey: QUERY_KEYS.LEADS_INFINITE(workspaceId, board.id),
     queryFn: ({ pageParam = 1 }) => 
       workspaceService.getLeadsByBoardInfinite(board.id, pageParam, 10),
     getNextPageParam: (lastPage, allPages) => {
       const currentPage = allPages.length;
-      console.log('getNextPageParam:', { currentPage, allPages: lastPage.allPages, hasNext: currentPage < lastPage.allPages });
       return currentPage < lastPage.allPages ? currentPage + 1 : undefined;
     },
     initialPageParam: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // onRefetch prop'iga refetch funksiyasini o'tkazish
+  React.useEffect(() => {
+    if (onRefetch) {
+      onRefetch(refetch);
+    }
+  }, [onRefetch, refetch]);
 
   // Flatten all leads from all pages
   const allLeads = data?.pages.flatMap(page => page.data) || [];
   const leadIds = allLeads.map((lead) => lead.id);
-
-  // Debug info
-  console.log('BoardColumn Debug:', {
-    boardId: board.id,
-    boardName: board.name,
-    allLeads: allLeads.length,
-    pages: data?.pages.length,
-    hasNextPage,
-    isFetchingNextPage,
-    totalPages: data?.pages[data.pages.length - 1]?.allPages
-  });
 
   const getColumnColor = (boardName: string) => {
     const colors = {
@@ -87,9 +106,17 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     return colors[boardName as keyof typeof colors] || 'text-gray-700 bg-gray-100';
   };
 
+  // Drag over visual feedback
+  const getDragOverStyles = () => {
+    if (isOver) {
+      return 'ring-4 ring-blue-400 ring-opacity-50 scale-105 transition-all duration-200';
+    }
+    return '';
+  };
+
   if (isLoading) {
     return (
-      <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col`}>
+      <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col ${getDragOverStyles()}`}>
         <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -110,7 +137,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
 
   if (error) {
     return (
-      <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col`}>
+      <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col ${getDragOverStyles()}`}>
         <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -126,7 +153,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   }
 
   return (
-    <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col`}>
+    <div className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-200 ${getDragOverStyles()}`}>
       <div className={`p-4 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -141,6 +168,16 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
               )}
             </div>
           </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => refetch()}
+              className="p-1 hover:bg-white/50"
+              title="Refresh board"
+            >
+              <RefreshCw size={16} />
+            </Button>
           <Button
             size="sm"
             variant="ghost"
@@ -149,6 +186,41 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           >
             <Plus size={16} />
           </Button>
+            <div className="relative" ref={menuRef}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1 hover:bg-white/50"
+              >
+                <MoreVertical size={16} />
+              </Button>
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                  <button
+                    onClick={() => {
+                      setShowEditModal(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                  >
+                    <Edit size={14} />
+                    <span>O'zgartirish</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Delete board logic
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                  >
+                    <Trash2 size={14} />
+                    <span>O'chirish</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -168,7 +240,11 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       >
         <SortableContext items={leadIds} strategy={verticalListSortingStrategy}>
           {allLeads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} />
+            <LeadCard 
+              key={lead.id} 
+              lead={lead}
+              isMoving={isMovingLead && movingLeadId === lead.id}
+            />
           ))}
         </SortableContext>
 
@@ -207,6 +283,41 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
         boardId={board.id}
         workspaceId={workspaceId}
       />
+
+      {/* Edit Board Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <h3 className="text-lg font-semibold mb-4">Board nomini o'zgartirish</h3>
+            <input
+              type="text"
+              value={newBoardName}
+              onChange={(e) => setNewBoardName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Board nomi"
+            />
+            <div className="flex justify-end space-x-3 mt-4">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setShowEditModal(false);
+                  setNewBoardName(board.name);
+                }}
+              >
+                Bekor qilish
+              </Button>
+              <Button
+                onClick={() => {
+                  // Update board name logic
+                  setShowEditModal(false);
+                }}
+              >
+                Saqlash
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }; 

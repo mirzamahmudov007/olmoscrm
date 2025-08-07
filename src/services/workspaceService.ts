@@ -5,7 +5,8 @@ import {
   CreateWorkspaceRequest,
   CreateBoardRequest,
   CreateLeadRequest,
-  Lead 
+  Lead,
+  Board
 } from '../types';
 
 export const workspaceService = {
@@ -18,6 +19,12 @@ export const workspaceService = {
 
   async getWorkspaceById(id: string): Promise<Workspace> {
     const response = await api.get<Workspace>(`/workspace/${id}`);
+    return response.data;
+  },
+
+  // Workspace'ning board'larini alohida olish
+  async getWorkspaceBoards(workspaceId: string): Promise<Board[]> {
+    const response = await api.get<Board[]>(`/workspace/${workspaceId}/boards`);
     return response.data;
   },
 
@@ -54,5 +61,19 @@ export const workspaceService = {
       `/lead/${boardId}?page=${pageParam}&size=${size}&boardId=${boardId}`
     );
     return response.data;
+  },
+
+  // Lead ko'chirish funksiyasi
+  async moveLead(
+    leadId: string,
+    newBoardId: string,
+    newSortOrder: number,
+    oldSortOrder: number
+  ): Promise<void> {
+    await api.put(`/lead/move/${leadId}`, {
+      boardId: newBoardId,
+      newSortOrder,
+      oldSortOrder
+    });
   },
 };
