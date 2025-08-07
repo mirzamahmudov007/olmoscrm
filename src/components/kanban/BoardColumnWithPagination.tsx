@@ -17,6 +17,7 @@ interface BoardColumnWithPaginationProps {
   movingLeadId?: string | null;
   onRefetch?: (refetch: () => void, getLeads: () => any[]) => void;
   boardIndex?: number;
+  onOpenCreateLeadModal?: (boardId: string) => void;
 }
 
 export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps> = ({ 
@@ -25,7 +26,8 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   isMovingLead = false,
   movingLeadId = null,
   onRefetch,
-  boardIndex = 0
+  boardIndex = 0,
+  onOpenCreateLeadModal
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -245,7 +247,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => onOpenCreateLeadModal ? onOpenCreateLeadModal(board.id) : setShowCreateModal(true)}
               className="p-1 hover:bg-white/50"
             >
               <Plus size={16} />
@@ -330,7 +332,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => onOpenCreateLeadModal ? onOpenCreateLeadModal(board.id) : setShowCreateModal(true)}
               className="mt-2"
             >
               <Plus size={14} className="mr-1" />

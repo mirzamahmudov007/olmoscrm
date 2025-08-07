@@ -22,6 +22,7 @@ export const WorkspacePage: React.FC = () => {
   
   const [showCreateBoardModal, setShowCreateBoardModal] = useState(false);
   const [showCreateLeadModal, setShowCreateLeadModal] = useState(false);
+  const [selectedBoardId, setSelectedBoardId] = useState<string | undefined>(undefined);
 
   const { data: workspace, isLoading, error, refetch } = useQuery({
     queryKey: QUERY_KEYS.WORKSPACE(id!),
@@ -63,6 +64,12 @@ export const WorkspacePage: React.FC = () => {
     } catch (error) {
       toast.error('Board\'larni yangilashda xatolik yuz berdi');
     }
+  };
+
+  // Lead qo'shish modal'ini ochish (umumiy)
+  const handleOpenCreateLeadModal = () => {
+    setSelectedBoardId(undefined); // Umumiy modal uchun board tanlanmagan
+    setShowCreateLeadModal(true);
   };
 
   if (isLoading) {
@@ -112,7 +119,7 @@ export const WorkspacePage: React.FC = () => {
     <Layout>
       <div className="h-[calc(100vh-120px)] flex flex-col px-2 md:px-4">
         {/* Header */}
-        <div className="bg-white rounded-xl mt-4 shadow-sm border border-gray-200 p-6 mb-6 flex-shrink-0">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
@@ -134,12 +141,34 @@ export const WorkspacePage: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefreshWorkspace}
+                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                  title="Ish maydonini yangilash"
+                >
+                  <RefreshCw size={16} className="mr-2" />
+                  Yangilash
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefreshAllBoards}
+                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                  title="Barcha board'larni yangilash"
+                >
+                  <RefreshCw size={16} className="mr-2" />
+                  Board'lar
+                </Button>
+              </div>
               
-              
+              <div className="border-l border-gray-300 h-8"></div>
               
               <div className="flex items-center space-x-2">
                 <Button
-                  onClick={() => setShowCreateLeadModal(true)}
+                  onClick={handleOpenCreateLeadModal}
                   className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200"
                 >
                   <UserPlus size={16} className="mr-2" />
@@ -184,6 +213,10 @@ export const WorkspacePage: React.FC = () => {
               <KanbanBoard 
                 workspace={workspace} 
                 onUpdateWorkspace={handleUpdateWorkspace}
+                onOpenCreateLeadModal={(boardId) => {
+                  setSelectedBoardId(boardId);
+                  setShowCreateLeadModal(true);
+                }}
               />
             </div>
           )}
@@ -195,6 +228,7 @@ export const WorkspacePage: React.FC = () => {
         isOpen={showCreateLeadModal}
         onClose={() => setShowCreateLeadModal(false)}
         workspace={workspace}
+        selectedBoardId={selectedBoardId}
       />
 
       {/* Create Board Modal */}

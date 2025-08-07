@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { X, User, Phone, FileText, MessageSquare, ChevronDown } from 'lucide-react';
+import { X } from 'lucide-react';
 import { workspaceService } from '../../services/workspaceService';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 import { Card } from '../ui/Card';
 import { AutoComplete } from '../ui/AutoComplete';
 import { CreateLeadRequest, Workspace } from '../../types';
@@ -16,6 +15,7 @@ interface CreateLeadFromTopModalProps {
   isOpen: boolean;
   onClose: () => void;
   workspace: Workspace;
+  selectedBoardId?: string; // Yangi prop - avtomatik tanlangan board
 }
 
 interface CreateLeadFormData {
@@ -30,11 +30,41 @@ export const CreateLeadFromTopModal: React.FC<CreateLeadFromTopModalProps> = ({
   isOpen,
   onClose,
   workspace,
+  selectedBoardId,
 }) => {
   const queryClient = useQueryClient();
   const [selectedBoard, setSelectedBoard] = useState<{ id: string; name: string } | null>(null);
   
   const { register, handleSubmit, reset, formState: { errors }, setValue, watch } = useForm<CreateLeadFormData>();
+
+  // selectedBoardId o'zgartirilganda avtomatik tanlash
+  useEffect(() => {
+    if (selectedBoardId && workspace.boards) {
+      const board = workspace.boards.find(b => b.id === selectedBoardId);
+      if (board) {
+        setSelectedBoard({ id: board.id, name: board.name });
+        setValue('boardId', board.id);
+      }
+    }
+  }, [selectedBoardId, workspace.boards, setValue]);
+
+  // Modal ochilganda form'ni tozalash
+  useEffect(() => {
+    if (isOpen) {
+      reset();
+      if (selectedBoardId && workspace.boards) {
+        const board = workspace.boards.find(b => b.id === selectedBoardId);
+        if (board) {
+          setSelectedBoard({ id: board.id, name: board.name });
+          setValue('boardId', board.id);
+        } else {
+          setSelectedBoard(null);
+        }
+      } else {
+        setSelectedBoard(null);
+      }
+    }
+  }, [isOpen, selectedBoardId, workspace.boards, setValue, reset]);
 
   const createLeadMutation = useMutation({
     mutationFn: (data: CreateLeadRequest) => workspaceService.createLead(data),
@@ -83,7 +113,7 @@ export const CreateLeadFromTopModal: React.FC<CreateLeadFromTopModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-lg bg-white shadow-2xl">
         <div className="p-6">
           {/* Header */}

@@ -25,11 +25,13 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 interface KanbanBoardProps {
   workspace: Workspace;
   onUpdateWorkspace: (updatedWorkspace: Workspace) => void;
+  onOpenCreateLeadModal?: (boardId: string) => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   workspace,
   onUpdateWorkspace,
+  onOpenCreateLeadModal,
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
@@ -603,6 +605,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   boardRefs.current[board.id] = { refetch, getLeads };
                 }}
                 boardIndex={index}
+                onOpenCreateLeadModal={onOpenCreateLeadModal}
               />
             </div>
           );
