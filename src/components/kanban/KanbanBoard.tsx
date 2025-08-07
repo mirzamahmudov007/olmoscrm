@@ -38,8 +38,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [movingLeadId, setMovingLeadId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
-  // Board'larni refetch qilish uchun ref'lar
-  const boardRefs = useRef<{ [key: string]: { refetch: () => void } }>({});
+  // Board'larni refetch qilish va leads'ni olish uchun ref'lar
+  const boardRefs = useRef<{ [key: string]: { refetch: () => void; getLeads: () => Lead[] } }>({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -108,24 +108,27 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       return;
     }
 
-    // currentWorkspace'dan board'larni olish
-    const currentActiveBoard = currentWorkspace.boards.find(b => b.id === activeBoard.id);
-    const currentOverBoard = currentWorkspace.boards.find(b => b.id === overBoard.id);
+    // BoardRefs'dan leads'ni olish
+    const activeBoardRef = boardRefs.current[activeBoard.id];
+    const overBoardRef = boardRefs.current[overBoard.id];
 
-    if (!currentActiveBoard || !currentOverBoard) {
-      console.log('TEST: Board not found in currentWorkspace');
+    if (!activeBoardRef || !overBoardRef) {
+      console.log('TEST: Board refs not found');
       return;
     }
 
+    const activeBoardLeads = activeBoardRef.getLeads();
+    const overBoardLeads = overBoardRef.getLeads();
+
     console.log('TEST: Current boards found:', {
-      activeBoard: currentActiveBoard.name,
-      overBoard: currentOverBoard.name,
-      activeBoardLeads: currentActiveBoard.leads.length,
-      overBoardLeads: currentOverBoard.leads.length,
+      activeBoard: activeBoard.name,
+      overBoard: overBoard.name,
+      activeBoardLeads: activeBoardLeads.length,
+      overBoardLeads: overBoardLeads.length,
       isOverBoard
     });
 
-    const activeLead = currentActiveBoard.leads.find(l => l.id === activeId);
+    const activeLead = activeBoardLeads.find(l => l.id === activeId);
     if (!activeLead) {
       console.log('TEST: Active lead not found in activeBoard');
       return;
@@ -134,31 +137,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     console.log('TEST: Active lead found:', activeLead.name);
 
     // Remove lead from active board
-    updatedWorkspace.boards[activeBoardIndex].leads = currentActiveBoard.leads.filter(
-      l => l.id !== activeId
+    updatedWorkspace.boards[activeBoardIndex].leads = activeBoardLeads.filter(
+      (l: any) => l.id !== activeId
     );
 
     // Add lead to over board
-    const newSortOrder = currentOverBoard.leads.length;
+    const newSortOrder = overBoardLeads.length;
     updatedWorkspace.boards[overBoardIndex].leads = [
-      ...currentOverBoard.leads,
+      ...overBoardLeads,
       { ...activeLead, sortOrder: newSortOrder }
     ];
 
     console.log('🔄 Temporary workspace updated - lead moved from', activeBoard.name, 'to', overBoard.name);
     
     console.log('TEST: Lead operation completed:', {
-      removedFrom: currentActiveBoard.name,
-      addedTo: currentOverBoard.name,
+      removedFrom: activeBoard.name,
+      addedTo: overBoard.name,
       newSortOrder,
       isOverBoard
     });
 
     console.log('TEST: Lead moved in tempWorkspace:', {
-      from: currentActiveBoard.name,
-      to: currentOverBoard.name,
+      from: activeBoard.name,
+      to: overBoard.name,
       newSortOrder,
-      overBoardNewLeadsCount: updatedWorkspace.boards[overBoardIndex].leads.length,
+      overBoardNewLeadsCount: updatedWorkspace.boards[overBoardIndex]?.leads?.length || 0,
       isOverBoard
     });
 
@@ -224,7 +227,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     console.log('TEST: Over board found:', {
       overId,
       overBoardName: overBoard?.name,
-      overBoardLeadsCount: overBoard?.leads.length || 0,
+      overBoardLeadsCount: overBoard?.leads?.length || 0,
       isOverBoard
     });
     
@@ -336,17 +339,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       return;
     }
     
-    const oldIndex = currentBoard.leads.findIndex(l => l.id === activeId);
-    const newIndex = isOverBoard ? -1 : currentBoard.leads.findIndex(l => l.id === overId);
+    const oldIndex = currentBoard.leads?.findIndex(l => l.id === activeId) || -1;
+    const newIndex = isOverBoard ? -1 : (currentBoard.leads?.findIndex(l => l.id === overId) || -1);
 
     console.log('TEST: Index calculation:', { oldIndex, newIndex, activeId, overId, isOverBoard });
     console.log('TEST: This should only happen for same board position changes');
 
-    if (oldIndex !== newIndex && oldIndex !== -1 && newIndex !== -1) {
+    if (oldIndex !== newIndex && oldIndex !== -1 && newIndex !== -1 && (currentBoard.leads || []).length > 0) {
       console.log('TEST: Moving lead within same board - oldIndex:', oldIndex, 'newIndex:', newIndex);
       
       updatedWorkspace.boards[boardIndex].leads = arrayMove(
-        currentBoard.leads,
+        currentBoard.leads || [],
         oldIndex,
         newIndex
       ).map((lead, index) => ({ ...lead, sortOrder: index }));
@@ -389,18 +392,38 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       console.log('TEST: Starting API call preparation');
       
       // MUHIM: Ma'lumotlarni asosiy workspace'dan olish
+      if (!workspace || !workspace.boards) {
+        console.log('TEST: Workspace or workspace.boards is undefined');
+        return;
+      }
+      
       const oldBoard = workspace.boards.find(b => b.id === oldBoardId);
       const newBoard = workspace.boards.find(b => b.id === newBoardId);
-      const lead = workspace.boards
-        .flatMap(board => board.leads)
-        .find(l => l.id === leadId);
+      
+      // BoardRefs'dan lead'ni qidirish
+      let lead = null;
+      for (const boardId in boardRefs.current) {
+        const boardRef = boardRefs.current[boardId];
+        if (boardRef && boardRef.getLeads) {
+          const leads = boardRef.getLeads();
+          const foundLead = leads.find((l: any) => l.id === leadId);
+          if (foundLead) {
+            lead = foundLead;
+            break;
+          }
+        }
+      }
 
+      // BoardRefs'dan leads count'larni olish
+      const oldBoardLeadsCount = boardRefs.current[oldBoardId]?.getLeads()?.length || 0;
+      const newBoardLeadsCount = boardRefs.current[newBoardId]?.getLeads()?.length || 0;
+      
       console.log('TEST: Found boards and lead:', {
         oldBoard: oldBoard?.name,
         newBoard: newBoard?.name,
         lead: lead?.name,
-        oldBoardLeads: oldBoard?.leads.length,
-        newBoardLeads: newBoard?.leads.length
+        oldBoardLeads: oldBoardLeadsCount,
+        newBoardLeads: newBoardLeadsCount
       });
 
       if (!newBoard || !oldBoard || !lead) {
@@ -411,16 +434,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       // Yangi sort order'ni hisoblash
       // tempWorkspace'da lead allaqachon ko'shilgan bo'lishi mumkin
       const finalNewSortOrder = tempWorkspace ? 
-        (tempWorkspace.boards.find(b => b.id === newBoardId)?.leads.length || 0) - 1 : 
-        newBoard.leads.length;
+        (tempWorkspace.boards.find(b => b.id === newBoardId)?.leads?.length || 0) - 1 : 
+        newBoardLeadsCount;
       
       console.log('📊 Sort order calculation:', { 
         tempWorkspace: !!tempWorkspace, 
-        newBoardLeads: newBoard.leads.length,
+        newBoardLeads: newBoardLeadsCount,
         finalNewSortOrder,
-        tempWorkspaceNewBoardLeads: tempWorkspace ? tempWorkspace.boards.find(b => b.id === newBoardId)?.leads.length : 'N/A'
+        tempWorkspaceNewBoardLeads: tempWorkspace ? tempWorkspace.boards.find(b => b.id === newBoardId)?.leads?.length : 'N/A'
       });
-      const oldSortOrder = oldBoard.leads.findIndex(l => l.id === leadId);
+      
+      // BoardRefs'dan oldSortOrder'ni hisoblash
+      const oldBoardLeads = boardRefs.current[oldBoardId]?.getLeads() || [];
+      const oldSortOrder = oldBoardLeads.findIndex((l: any) => l.id === leadId);
       if (oldSortOrder === -1) {
         console.log('❌ Lead eski board\'da topilmadi');
         return;
@@ -495,43 +521,68 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   const findLeadById = (id: string): Lead | null => {
-    // Asosiy workspace'dan lead'ni qidirish
-    for (const board of workspace.boards) {
-      const lead = board.leads.find(l => l.id === id);
-      if (lead) {
-        return lead;
+    // BoardRefs'dan lead'ni qidirish
+    for (const boardId in boardRefs.current) {
+      const boardRef = boardRefs.current[boardId];
+      if (boardRef && boardRef.getLeads) {
+        const leads = boardRef.getLeads();
+        const lead = leads.find(l => l.id === id);
+        if (lead) {
+          return lead;
+        }
       }
     }
     return null;
   };
 
   const findBoardByLeadId = (leadId: string) => {
-    for (const board of currentWorkspace.boards) {
-      const hasLead = board.leads.some(lead => lead.id === leadId);
-      if (hasLead) {
-        return board;
+    // BoardRefs'dan lead'ni qidirish
+    for (const boardId in boardRefs.current) {
+      const boardRef = boardRefs.current[boardId];
+      if (boardRef && boardRef.getLeads) {
+        const leads = boardRef.getLeads();
+        const hasLead = leads.some(lead => lead.id === leadId);
+        if (hasLead) {
+          // Board'ni workspace'dan topish
+          const currentWorkspace = tempWorkspace || workspace;
+          return currentWorkspace.boards?.find(b => b.id === boardId) || null;
+        }
       }
     }
     return null;
   };
 
   const findBoardById = (boardId: string) => {
+    if (!currentWorkspace || !currentWorkspace.boards) {
+      return null;
+    }
+    
     const board = currentWorkspace.boards.find(board => board.id === boardId);
     return board;
   };
 
   // Asosiy workspace'dan board'ni topish
   const findBoardByIdFromWorkspace = (boardId: string, targetWorkspace: Workspace) => {
+    if (!targetWorkspace || !targetWorkspace.boards) {
+      return null;
+    }
+    
     const board = targetWorkspace.boards.find(board => board.id === boardId);
     return board;
   };
 
   // Asosiy workspace'dan lead bo'yicha board'ni topish
   const findBoardByLeadIdFromWorkspace = (leadId: string, targetWorkspace: Workspace) => {
-    for (const board of targetWorkspace.boards) {
-      const hasLead = board.leads.some(lead => lead.id === leadId);
-      if (hasLead) {
-        return board;
+    // BoardRefs'dan lead'ni qidirish
+    for (const boardId in boardRefs.current) {
+      const boardRef = boardRefs.current[boardId];
+      if (boardRef && boardRef.getLeads) {
+        const leads = boardRef.getLeads();
+        const hasLead = leads.some(lead => lead.id === leadId);
+        if (hasLead) {
+          // Board'ni targetWorkspace'dan topish
+          return targetWorkspace.boards?.find(b => b.id === boardId) || null;
+        }
       }
     }
     return null;
@@ -549,15 +600,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-6 overflow-x-auto pb-6 h-[calc(100vh-200px)]">
-        {currentWorkspace.boards.map((board, index) => (
+        {currentWorkspace?.boards?.map((board, index) => (
           <div key={board.id} className="w-80 flex-shrink-0 h-full">
             <BoardColumnWithPagination 
               board={board} 
               workspaceId={workspace.id}
               isMovingLead={isMovingLead}
               movingLeadId={movingLeadId}
-              onRefetch={(refetch) => {
-                boardRefs.current[board.id] = { refetch };
+              onRefetch={(refetch, getLeads) => {
+                boardRefs.current[board.id] = { refetch, getLeads };
               }}
               boardIndex={index}
             />

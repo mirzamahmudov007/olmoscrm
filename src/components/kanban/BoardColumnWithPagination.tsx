@@ -15,7 +15,7 @@ interface BoardColumnWithPaginationProps {
   workspaceId: string;
   isMovingLead?: boolean;
   movingLeadId?: string | null;
-  onRefetch?: (refetch: () => void) => void;
+  onRefetch?: (refetch: () => void, getLeads: () => any[]) => void;
   boardIndex?: number;
 }
 
@@ -87,12 +87,15 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   // onRefetch prop'iga refetch funksiyasini o'tkazish
   React.useEffect(() => {
     if (onRefetch) {
-      onRefetch(async () => {
-        console.log(`🔄 Board "${board.name}" refetch boshlandi...`);
-        const result = await refetch();
-        console.log(`✅ Board "${board.name}" refetch tugadi:`, result.data?.pages?.length, 'pages');
-        return result;
-      });
+      onRefetch(
+        async () => {
+          console.log(`🔄 Board "${board.name}" refetch boshlandi...`);
+          const result = await refetch();
+          console.log(`✅ Board "${board.name}" refetch tugadi:`, result.data?.pages?.length, 'pages');
+          return result;
+        },
+        () => allLeads
+      );
     }
   }, [onRefetch, refetch]);
 
