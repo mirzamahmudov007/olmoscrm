@@ -45,6 +45,7 @@ export interface Lead {
   date: string | null;
   sortOrder: number;
   createdAt: string;
+  boardId: string; // Lead'ning board ID'si
 }
 
 export interface CreateWorkspaceRequest {

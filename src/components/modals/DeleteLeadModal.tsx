@@ -26,16 +26,52 @@ export const DeleteLeadModal: React.FC<DeleteLeadModalProps> = ({
 
   const deleteLeadMutation = useMutation({
     mutationFn: (leadId: string) => workspaceService.deleteLead(leadId),
+    onMutate: async (leadId) => {
+      // Optimistic update uchun eski data'ni saqlash
+      const previousData = queryClient.getQueryData(QUERY_KEYS.LEADS_INFINITE(workspaceId, ''));
+      
+      // Optimistic update - lead'ni o'chirish
+      queryClient.setQueryData(QUERY_KEYS.LEADS_INFINITE(workspaceId, ''), (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => ({
+            ...page,
+            data: page.data.filter((lead: Lead) => lead.id !== leadId)
+          }))
+        };
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
       toast.success('Lead muvaffaqiyatli o\'chirildi! 🗑️');
       onClose();
       
-      // Cache'ni invalidate qilish
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LEADS_INFINITE(workspaceId, '') });
+      // Cache'ni invalidate qilish - barcha board'lar uchun
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.LEADS_INFINITE(workspaceId, ''),
+        exact: false 
+      });
+      
+      // Workspace cache'ni ham invalidate qilish
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.WORKSPACE(workspaceId),
+        exact: true 
+      });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
       const apiError = handleApiError(error);
       toast.error(apiError.message);
+      
+      // Xatolik bo'lsa, eski data'ni qaytarish
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          QUERY_KEYS.LEADS_INFINITE(workspaceId, ''),
+          context.previousData
+        );
+      }
     },
   });
 
@@ -65,6 +101,7 @@ export const DeleteLeadModal: React.FC<DeleteLeadModalProps> = ({
               variant="ghost"
               size="sm"
               onClick={onClose}
+              disabled={deleteLeadMutation.isPending}
               className="w-8 h-8 p-0 hover:bg-gray-100"
             >
               <X size={16} />
@@ -100,6 +137,7 @@ export const DeleteLeadModal: React.FC<DeleteLeadModalProps> = ({
             <Button
               onClick={handleDelete}
               isLoading={deleteLeadMutation.isPending}
+              disabled={deleteLeadMutation.isPending}
               className="flex-1 bg-red-600 hover:bg-red-700 text-white"
             >
               <Trash2 size={16} className="mr-2" />
@@ -108,6 +146,7 @@ export const DeleteLeadModal: React.FC<DeleteLeadModalProps> = ({
             <Button
               variant="ghost"
               onClick={onClose}
+              disabled={deleteLeadMutation.isPending}
               className="flex-1"
             >
               Bekor qilish

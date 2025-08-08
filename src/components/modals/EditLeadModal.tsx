@@ -27,7 +27,8 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
     name: '',
     phone: '',
     disease: '',
-    note: ''
+    note: '',
+    boardId: ''
   });
   const queryClient = useQueryClient();
 
@@ -38,7 +39,8 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
         name: lead.name || '',
         phone: lead.phone || '',
         disease: lead.disease || '',
-        note: lead.note || ''
+        note: lead.note || '',
+        boardId: lead.boardId || '' // Lead'ning joriy board ID'sini qo'shamiz
       });
     }
   }, [lead]);
@@ -46,16 +48,56 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
   const updateLeadMutation = useMutation({
     mutationFn: ({ leadId, data }: { leadId: string; data: any }) =>
       workspaceService.updateLead(leadId, data),
-    onSuccess: () => {
+    onMutate: async ({ leadId, data }) => {
+      // Optimistic update uchun eski data'ni saqlash
+      const previousData = queryClient.getQueryData(QUERY_KEYS.LEADS_INFINITE(workspaceId, ''));
+      
+      // Optimistic update - barcha board'lardagi lead'larni yangilash
+      queryClient.setQueryData(QUERY_KEYS.LEADS_INFINITE(workspaceId, ''), (oldData: any) => {
+        if (!oldData) return oldData;
+        
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => ({
+            ...page,
+            data: page.data.map((lead: Lead) => 
+              lead.id === leadId 
+                ? { ...lead, ...data }
+                : lead
+            )
+          }))
+        };
+      });
+      
+      return { previousData };
+    },
+    onSuccess: (data, variables) => {
       toast.success('Lead muvaffaqiyatli yangilandi! ✨');
       onClose();
       
-      // Cache'ni invalidate qilish
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LEADS_INFINITE(workspaceId, '') });
+      // Cache'ni invalidate qilish - faqat kerakli board'lar uchun
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.LEADS_INFINITE(workspaceId, ''),
+        exact: false 
+      });
+      
+      // Workspace cache'ni ham invalidate qilish
+      queryClient.invalidateQueries({ 
+        queryKey: QUERY_KEYS.WORKSPACE(workspaceId),
+        exact: true 
+      });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
       const apiError = handleApiError(error);
       toast.error(apiError.message);
+      
+      // Xatolik bo'lsa, eski data'ni qaytarish
+      if (context?.previousData) {
+        queryClient.setQueryData(
+          QUERY_KEYS.LEADS_INFINITE(workspaceId, ''),
+          context.previousData
+        );
+      }
     },
   });
 
@@ -63,9 +105,18 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
     e.preventDefault();
     if (!lead) return;
 
+    // API'ga yuboriladigan data'ni tayyorlash - boardId ham qo'shamiz
+    const updateData = {
+      name: formData.name.trim(),
+      phone: formData.phone.trim(),
+      disease: formData.disease.trim(),
+      note: formData.note.trim(),
+      boardId: formData.boardId // Lead'ning joriy board ID'sini qo'shamiz
+    };
+
     updateLeadMutation.mutate({
       leadId: lead.id,
-      data: formData
+      data: updateData
     });
   };
 
@@ -117,6 +168,7 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="Mijoz ismi"
                 required
+                disabled={updateLeadMutation.isPending}
               />
             </div>
 
@@ -132,6 +184,7 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 placeholder="+998 XX XXX XX XX"
                 required
+                disabled={updateLeadMutation.isPending}
               />
             </div>
 
@@ -146,8 +199,15 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
                 value={formData.disease}
                 onChange={(e) => handleInputChange('disease', e.target.value)}
                 placeholder="Kasallik tashxisi"
+                disabled={updateLeadMutation.isPending}
               />
             </div>
+
+            {/* Board ID - yashirilgan, avtomatik olinadi */}
+            <input
+              type="hidden"
+              value={formData.boardId}
+            />
 
             {/* Izoh */}
             <div>
@@ -160,7 +220,8 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
                 onChange={(e) => handleInputChange('note', e.target.value)}
                 placeholder="Qo'shimcha ma'lumotlar..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={updateLeadMutation.isPending}
               />
             </div>
 
@@ -169,7 +230,7 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
               <Button
                 type="submit"
                 isLoading={updateLeadMutation.isPending}
-                disabled={!formData.name.trim() || !formData.phone.trim()}
+                disabled={!formData.name.trim() || !formData.phone.trim() || updateLeadMutation.isPending}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Save size={16} className="mr-2" />
@@ -179,6 +240,7 @@ export const EditLeadModal: React.FC<EditLeadModalProps> = ({
                 type="button"
                 variant="ghost"
                 onClick={onClose}
+                disabled={updateLeadMutation.isPending}
                 className="flex-1"
               >
                 Bekor qilish
