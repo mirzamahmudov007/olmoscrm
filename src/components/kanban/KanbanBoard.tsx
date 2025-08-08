@@ -535,14 +535,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       // OPTIMISTIC UPDATE: UI'ni darhol yangilash
       console.log('🎯 Optimistic update boshlandi...');
       
-      // Eski board'dan lead'ni olib tashlash
-      const oldBoardOptimisticLeads = oldBoardLeads.filter((l: any) => l.id !== leadId);
-      addOptimisticUpdate(oldBoardId, oldBoardOptimisticLeads);
-      
-      // Yangi board'ga lead'ni qo'shish
-      const newBoardOptimisticLeads = [...(boardRefs.current[newBoardId]?.getLeads() || [])];
-      newBoardOptimisticLeads.splice(finalNewSortOrder, 0, { ...lead, sortOrder: finalNewSortOrder });
-      addOptimisticUpdate(newBoardId, newBoardOptimisticLeads);
+      // Agar lead o'z board'iga ko'chirilayotgan bo'lsa, optimistic update'ni o'tkazib yuboramiz
+      if (oldBoardId === newBoardId) {
+        console.log('🔄 Lead o\'z board\'iga ko\'chirilmoqda, optimistic update o\'tkazib yuboriladi');
+      } else {
+        // Eski board'dan lead'ni olib tashlash
+        const oldBoardOptimisticLeads = oldBoardLeads.filter((l: any) => l.id !== leadId);
+        addOptimisticUpdate(oldBoardId, oldBoardOptimisticLeads);
+        
+        // Yangi board'ga lead'ni qo'shish
+        const newBoardOptimisticLeads = [...(boardRefs.current[newBoardId]?.getLeads() || [])];
+        newBoardOptimisticLeads.splice(finalNewSortOrder, 0, { ...lead, sortOrder: finalNewSortOrder });
+        addOptimisticUpdate(newBoardId, newBoardOptimisticLeads);
+      }
 
       // Lead ko'chirish log'i
       console.log(`🚀 Lead "${lead.name}" ko'chirilmoqda: ${oldBoard.name} → ${newBoard.name}`);
@@ -749,7 +754,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           }
         }}
       >
-        <div className="flex gap-3 md:gap-4 overflow-x-auto pb-6 h-full w-full px-3 md:px-4">
+        <div className="flex gap-2 md:gap-3 overflow-x-auto h-full w-full px-2 md:px-3">
           {currentWorkspace?.boards?.map((board, index) => {
             // Optimistic update ma'lumotlarini olish
             const optimisticUpdate = optimisticUpdates[board.id];

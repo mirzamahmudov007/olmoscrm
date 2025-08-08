@@ -48,6 +48,7 @@ function App() {
                 }
               />
               <Route path="/" element={<Navigate to={ROUTES.WORKSPACES} replace />} />
+              <Route path="*" element={<Navigate to={ROUTES.WORKSPACES} replace />} />
             </Routes>
           </div>
           

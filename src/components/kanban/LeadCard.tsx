@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Phone, FileText, GripVertical, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Phone, FileText, GripVertical, MoreVertical, Edit, Trash2, Clock } from 'lucide-react';
 import { Card } from '../ui/Card';
 import { Lead } from '../../types';
 
@@ -30,8 +30,6 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
       easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
     },
   });
-
-
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -70,6 +68,51 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
     return phone; // Agar format to'g'ri bo'lmasa, asl holatda qoldirish
   };
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      const diffInDays = Math.floor(diffInHours / 24);
+      
+      // Uzbekcha oy nomlari
+      const months = [
+        'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+        'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'
+      ];
+      
+      // Aniq vaqt
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const exactTime = `${day} ${month} ${year} ${hours}:${minutes}`;
+      
+      // Nisbiy vaqt
+      let relativeTime = '';
+      if (diffInMinutes < 1) {
+        relativeTime = 'Hozircha';
+      } else if (diffInMinutes < 60) {
+        relativeTime = `${diffInMinutes} daqiqa oldin`;
+      } else if (diffInHours < 24) {
+        relativeTime = `${diffInHours} soat oldin`;
+      } else if (diffInDays < 7) {
+        relativeTime = `${diffInDays} kun oldin`;
+      } else {
+        const diffInWeeks = Math.floor(diffInDays / 7);
+        relativeTime = `${diffInWeeks} hafta oldin`;
+      }
+      
+      return `${exactTime} (${relativeTime})`;
+    } catch {
+      return '';
+    }
+  };
+
   const handleEdit = () => {
     setShowEditModal(true);
     setShowMenu(false);
@@ -93,7 +136,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
       }`}
     >
       <Card 
-                  className={`hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-blue-300 ${isDragging ? 'bg-gray-50 shadow-md border-gray-300' : ''} p-3 min-h-[120px]`} 
+        className={`hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-blue-300 ${isDragging ? 'bg-gray-50 shadow-md border-gray-300' : ''} p-3 min-h-[160px]`} 
         style={{ 
           cursor: 'default',
         }}
@@ -118,7 +161,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
                   style={{ touchAction: 'none' }}
                   aria-label={`${editedLead.name} lead'ni sudrab o'tkazish`}
                   title="Sudrab o'tkazish uchun ushlab turib bosing"
-                      disabled={isDragging}
+                  disabled={isDragging}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -183,6 +226,18 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
                 {formatPhone(editedLead.phone)}
               </span>
             </div>
+
+            {/* Yaratilgan vaqt */}
+            {editedLead.createdAt && (
+              <div className="space-y-1">
+                <div className="flex items-center space-x-1.5 text-xs text-gray-500 min-h-[16px]">
+                  <Clock size={11} className="text-gray-400 flex-shrink-0" />
+                  <span className="font-medium">
+                    {formatDate(editedLead.createdAt)}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Izoh - faqat qisqa */}
             {editedLead.note && editedLead.note.trim() && (

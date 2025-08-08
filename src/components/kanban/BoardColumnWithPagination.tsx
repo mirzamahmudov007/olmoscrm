@@ -116,8 +116,8 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   const allLeads = data?.pages.flatMap(page => page.data) || [];
   const leadIds = allLeads.map((lead) => lead.id);
   
-  // Optimistic leads'ni ishlatish agar mavjud bo'lsa
-  const displayLeads = optimisticLeads && optimisticLeads.length > 0 ? optimisticLeads : allLeads;
+  // Optimistic leads'ni ishlatish agar mavjud bo'lsa va boshqa board'dan kelganda
+  const displayLeads = optimisticLeads && optimisticLeads.length > 0 && isOptimisticUpdate ? optimisticLeads : allLeads;
 
   // onRefetch prop'iga refetch funksiyasini o'tkazish
   React.useEffect(() => {
@@ -202,7 +202,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       aria-label={`${board.name} board - lead'larni tashlash uchun`}
       aria-dropped={isDragOverBoard ? 'true' : 'false'}
     >
-      <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0 transition-all duration-500 ${isDragOverBoard ? 'bg-blue-100/50 border-blue-300' : ''}`}>
+      <div className={`p-2 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0 transition-all duration-500 ${isDragOverBoard ? 'bg-blue-100/50 border-blue-300' : ''}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <h3 className={`font-semibold text-sm transition-all duration-300 ${isDragOverBoard ? 'text-blue-700' : ''}`}>
@@ -287,7 +287,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       </div>
 
       <div
-        className={`flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 transition-all duration-500 ${isDragOverBoard ? 'bg-blue-50/20' : ''}`}
+        className={`flex-1 p-2 space-y-1.5 overflow-y-auto scrollbar-none transition-all duration-500 ${isDragOverBoard ? 'bg-blue-50/20' : ''}`}
         onScroll={(e) => {
           const target = e.currentTarget;
           const { scrollTop, scrollHeight, clientHeight } = target;
