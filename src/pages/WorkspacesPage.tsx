@@ -109,18 +109,18 @@ export const WorkspacesPage: React.FC = () => {
   ];
 
   // Loading state'ni ko'rsatmaslik, optimistic UI ishlatish
-  // if (isLoading) {
-  //   return (
-  //     <Layout>
-  //       <div className="min-h-[60vh] flex items-center justify-center">
-  //         <div className="text-center">
-  //           <LoadingSpinner size="lg" />
-  //           <p className="mt-4 text-gray-600 text-lg">Ish maydonlari yuklanmoqda...</p>
-  //         </div>
-  //       </div>
-  //     </Layout>
-  //   );
-  // }
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center">
+            <LoadingSpinner size="lg" />
+            <p className="mt-4 text-gray-600 text-lg">Ish maydonlari yuklanmoqda...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (error) {
     const apiError = handleApiError(error);

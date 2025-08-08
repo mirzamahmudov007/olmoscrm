@@ -77,17 +77,6 @@ export const WorkspacePage: React.FC = () => {
     setShowCreateLeadModal(true);
   };
 
-  // Loading state'ni ko'rsatmaslik, optimistic UI ishlatish
-  // if (isLoading) {
-  //   return (
-  //     <Layout>
-  //       <div className="flex items-center justify-center h-64">
-  //         <LoadingSpinner size="lg" />
-  //       </div>
-  //     </Layout>
-  //   );
-  // }
-
   if (error) {
     const apiError = handleApiError(error);
     return (
