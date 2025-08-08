@@ -139,7 +139,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
       }`}
     >
       <Card 
-        className={`hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-blue-300 ${isDragging ? 'bg-gray-50 shadow-md border-gray-300' : ''} p-3 min-h-[160px]`} 
+        className={`hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-blue-300 ${isDragging ? 'bg-blue-50 shadow-xl border-blue-400 transform scale-105' : ''} p-3 min-h-[160px]`} 
         style={{ 
           cursor: 'default',
         }}

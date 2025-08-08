@@ -173,8 +173,8 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
 
   // Drag over visual feedback - optimized
   const getDragOverStyles = () => {
-    if (isDragOverBoard) {
-      return 'ring-4 ring-blue-500 ring-opacity-70 bg-blue-50/30 shadow-xl border-blue-400';
+    if (isDragOverBoard || isOver) {
+      return 'ring-4 ring-blue-500 ring-opacity-70 bg-blue-50/50 shadow-xl border-blue-400 transform scale-105';
     }
     return '';
   };
@@ -193,23 +193,22 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   return (
     <div 
       ref={setNodeRef}
-      className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-500 ease-out ${getDragOverStyles()} ${getOptimisticStyles()}`}
+      className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-300 ease-out ${getDragOverStyles()} ${getOptimisticStyles()}`}
       style={{
-        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-        zIndex: isDragOverBoard ? 20 : 1,
-        boxShadow: isDragOverBoard ? '0 10px 25px -5px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: (isDragOverBoard || isOver) ? 20 : 1,
+        boxShadow: (isDragOverBoard || isOver) ? '0 20px 25px -5px rgba(59, 130, 246, 0.3)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
         transform: isOptimisticUpdate ? 'scale(0.98)' : 'scale(1)',
       }}  
       role="region"
       aria-label={`${board.name} board - lead'larni tashlash uchun`}
-      aria-dropped={isDragOverBoard ? 'true' : 'false'}
     >
-      <div className={`p-2 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0 transition-all duration-500 ${isDragOverBoard ? 'bg-blue-100/50 border-blue-300' : ''}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <h3 className={`font-semibold text-sm transition-all duration-300 ${isDragOverBoard ? 'text-blue-700' : ''}`}>
-              {boardIndex + 1}. {board.name}
-            </h3>
+              <div className={`p-2 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0 transition-all duration-300 ${(isDragOverBoard || isOver) ? 'bg-blue-100/70 border-blue-300' : ''}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <h3 className={`font-semibold text-sm transition-all duration-300 ${(isDragOverBoard || isOver) ? 'text-blue-700' : ''}`}>
+                {boardIndex + 1}. {board.name}
+              </h3>
             <div className="flex items-center space-x-1">
               <Users size={14} />
               <span className="text-sm font-medium">{displayLeads.length}</span>

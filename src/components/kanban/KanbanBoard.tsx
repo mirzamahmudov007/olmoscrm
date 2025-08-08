@@ -769,9 +769,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           })}
         </div>
 
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay>
           {activeId && activeLead ? (
-            <div className="transform rotate-1 scale-105 shadow-lg">
+            <div className="transform rotate-2 scale-110 shadow-2xl border-2 border-blue-300 bg-white rounded-lg">
               <LeadCard 
                 lead={activeLead} 
                 onOpenEditLeadModal={handleOpenEditLeadModal}
