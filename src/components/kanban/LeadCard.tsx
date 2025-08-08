@@ -8,11 +8,10 @@ import { Lead } from '../../types';
 
 interface LeadCardProps {
   lead: Lead;
-  isMoving?: boolean;
   onOpenDeleteLeadModal?: (lead: Lead) => void;
 }
 
-export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false, onOpenDeleteLeadModal }) => {
+export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editedLead, setEditedLead] = useState(lead);
@@ -98,10 +97,10 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false, onOp
       }}
       className={`transform transition-all duration-200 ${
         isDragging ? 'opacity-30' : ''
-      } ${isMoving ? 'opacity-30 pointer-events-none' : ''}`}
+      }`}
     >
       <Card 
-        className={`hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-blue-300 ${isMoving ? 'bg-gray-100' : ''} ${isDragging ? 'bg-gray-50 shadow-md border-gray-300' : ''} p-3 min-h-[120px]`} 
+                  className={`hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-blue-300 ${isDragging ? 'bg-gray-50 shadow-md border-gray-300' : ''} p-3 min-h-[120px]`} 
         style={{ 
           cursor: 'default',
         }}
@@ -126,7 +125,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false, onOp
                   style={{ touchAction: 'none' }}
                   aria-label={`${editedLead.name} lead'ni sudrab o'tkazish`}
                   title="Sudrab o'tkazish uchun ushlab turib bosing"
-                  disabled={isDragging || isMoving}
+                      disabled={isDragging}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -148,10 +147,10 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false, onOp
                   <button
                     onClick={() => setShowMenu(!showMenu)}
                     className="text-gray-400 hover:text-gray-600 p-0.5"
-                    disabled={isMoving}
+                    disabled={isDragging}
                   >
                     <MoreVertical size={14} />
-                  </button>
+                  </button> 
                   {showMenu && (
                     <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                       <button
@@ -202,15 +201,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, isMoving = false, onOp
             )}
           </div>
 
-          {/* Loading indicator */}
-          {isMoving && (
-            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center rounded-lg">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-xs text-blue-600 font-medium">Ko'chirilmoqda...</span>
-              </div>
-            </div>
-          )}
+          {/* Loading indicator - o'chirildi */}
         </div>
       </Card>
 

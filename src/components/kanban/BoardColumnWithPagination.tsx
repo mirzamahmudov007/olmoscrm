@@ -13,8 +13,6 @@ import { QUERY_KEYS } from '../../config/constants';
 interface BoardColumnWithPaginationProps {
   board: Board;
   workspaceId: string;
-  isMovingLead?: boolean;
-  movingLeadId?: string | null;
   onRefetch?: (refetch: () => void, getLeads: () => any[]) => void;
   boardIndex?: number;
   onOpenCreateLeadModal?: (boardId: string) => void;
@@ -26,8 +24,6 @@ interface BoardColumnWithPaginationProps {
 export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps> = ({ 
   board, 
   workspaceId,
-  isMovingLead = false,
-  movingLeadId = null,
   onRefetch,
   boardIndex = 0,
   onOpenCreateLeadModal,
@@ -47,7 +43,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       type: 'board',
       board: board,
     },
-    disabled: isMovingLead, // Lead ko'chirilayotganda drop zone'ni o'chirish
+    disabled: false, // Drop zone har doim faol
   });
   
   // Debug uchun isOver o'zgarishini kuzatish
@@ -162,91 +158,48 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
 
   // Drag over visual feedback - optimized
   const getDragOverStyles = () => {
-    if (isOver && !isMovingLead) {
-      return 'ring-2 ring-blue-400 ring-opacity-50 bg-blue-50/20 shadow-md border-blue-300';
+    if (isOver) {
+      return 'ring-2 ring-blue-400 ring-opacity-50 bg-blue-5  0/20 shadow-md border-blue-300';
     }
     return '';
   };
 
-  if (isLoading) {
-    return (
-      <div 
-        ref={setNodeRef}
-        className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col ${getDragOverStyles()}`}
-        style={{
-          transform: isOver ? 'scale(1.02)' : 'scale(1)',
-          transition: 'all 0.2s ease-in-out',
-          zIndex: isOver ? 10 : 1
-        }}
-      >
-        <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <h3 className="font-semibold text-sm">{board.name}</h3>
-              <div className="flex items-center space-x-1">
-                <Users size={14} />
-                <span className="text-sm font-medium">...</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 p-4 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-        </div>
-      </div>
-    );
-  }
+  // Loading state'ni ko'rsatmaslik, optimistic UI ishlatish
+  const displayLeads = isLoading ? [] : allLeads;
 
-  if (error) {
-    return (
-      <div 
-        ref={setNodeRef}
-        className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col ${getDragOverStyles()}`}
-        style={{
-          transform: isOver ? 'scale(1.02)' : 'scale(1)',
-          transition: 'all 0.2s ease-in-out',
-          zIndex: isOver ? 10 : 1
-        }}
-      >
-        <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <h3 className="font-semibold text-sm">{board.name}</h3>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 p-4 flex items-center justify-center">
-          <p className="text-red-500 text-sm">Error loading leads</p>
-        </div>
-      </div>
-    );
-  }
+  // Error state'da ham board ko'rsatish, lekin error message qo'shish
+  const hasError = !!error;
 
   return (
     <div 
       ref={setNodeRef}
       className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-200 ${getDragOverStyles()}`}
-      style={{
-        transform: isOver && !isMovingLead ? 'scale(1.02)' : 'scale(1)',
-        transition: 'all 0.2s ease-in-out',
-        zIndex: isOver ? 10 : 1
-      }}
+              style={{
+          transform: isOver ? 'scale(1.02)' : 'scale(1)',
+          transition: 'all 0.2s ease-in-out',
+          zIndex: isOver ? 10 : 1
+        }}  
       role="region"
       aria-label={`${board.name} board - lead'larni tashlash uchun`}
       aria-dropped={isOver ? 'true' : 'false'}
     >
               <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-betwee  n">
             <div className="flex items-center space-x-3">
               <h3 className="font-semibold text-sm">
                 {boardIndex + 1}. {board.name}
               </h3>
               <div className="flex items-center space-x-1">
                 <Users size={14} />
-                <span className="text-sm font-medium">{allLeads.length}</span>
+                <span className="text-sm font-medium">{displayLeads.length}</span>
                 {data?.pages[data.pages.length - 1]?.allPages && (
                   <span className="text-xs text-gray-500">
                     / {data.pages[data.pages.length - 1].allPages * 10}
+                  </span>
+                )}
+                {hasError && (
+                  <span className="text-xs text-red-500 ml-1" title="Xatolik yuz berdi">
+                    ⚠️
                   </span>
                 )}
               </div>
@@ -320,12 +273,11 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           }
         }}
       >
-        <SortableContext items={leadIds} strategy={verticalListSortingStrategy}>
-          {allLeads.map((lead) => (
+        <SortableContext items={displayLeads.map(l => l.id)} strategy={verticalListSortingStrategy}>
+          {displayLeads.map((lead) => (
             <LeadCard 
               key={lead.id} 
               lead={lead}
-              isMoving={isMovingLead && movingLeadId === lead.id}
               onOpenDeleteLeadModal={onOpenDeleteLeadModal}
             />
           ))}
@@ -343,10 +295,10 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           </div>
         )}
 
-        {allLeads.length === 0 && (
+        {displayLeads.length === 0 && !isLoading && (
           <div className="text-center py-8 text-gray-500">
             <Users size={32} className="mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No leads yet</p>
+            <p className="text-sm">Lead'lar yo'q</p>
             <Button
               size="sm"
               variant="ghost"
@@ -354,7 +306,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
               className="mt-2"
             >
               <Plus size={14} className="mr-1" />
-              Add lead
+              Lead qo'shish
             </Button>
           </div>
         )}

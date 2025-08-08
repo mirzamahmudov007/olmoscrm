@@ -39,9 +39,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 }) => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
-  const [isMovingLead, setIsMovingLead] = useState(false);
   const [tempWorkspace, setTempWorkspace] = useState<Workspace | null>(null);
-  const [movingLeadId, setMovingLeadId] = useState<string | null>(null);
   const [affectedBoardIds, setAffectedBoardIds] = useState<string[]>([]);
   
   // Modal states
@@ -411,13 +409,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   ) => {
     console.log('TEST: handleMoveLeadBetweenBoards called with:', { leadId, oldBoardId, newBoardId });
     
-    if (isMovingLead) {
-      console.log('TEST: Already moving lead, skipping');
-      return;
-    }
-    
-    setIsMovingLead(true);
-    setMovingLeadId(leadId);
+    // Loading state'lar olib tashlandi
     setAffectedBoardIds([oldBoardId, newBoardId]);
     
     try {
@@ -521,8 +513,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       console.log('🧹 Cleaning up after lead move');
       // Temporary workspace'ni tozalash
       setTempWorkspace(null);
-      setIsMovingLead(false);
-      setMovingLeadId(null);
       setAffectedBoardIds([]);
       console.log('🧹 Cleanup completed');
     }
@@ -677,29 +667,22 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onDragEnd={handleDragEnd}
       >
         <div className="flex gap-3 md:gap-4 overflow-x-auto pb-6 h-full w-full px-3 md:px-4">
-          {currentWorkspace?.boards?.map((board, index) => {
-            // Faqat o'zgargan board'lar uchun isMovingLead va movingLeadId yuborish
-            const isBoardInvolved = isMovingLead && movingLeadId && affectedBoardIds.includes(board.id);
-            
-            return (
-              <div key={board.id} className="w-64 md:w-72 lg:w-80 flex-shrink-0 h-full min-w-64 md:min-w-72 lg:min-w-80">
-                <BoardColumnWithPagination 
-                  board={board} 
-                  workspaceId={workspace.id}
-                  isMovingLead={isBoardInvolved || false}
-                  movingLeadId={isBoardInvolved ? movingLeadId : null}
-                  onRefetch={(refetch, getLeads) => {
-                    boardRefs.current[board.id] = { refetch, getLeads };
-                  }}
-                  boardIndex={index}
-                  onOpenCreateLeadModal={onOpenCreateLeadModal}
-                  onOpenEditBoardModal={handleOpenEditBoardModal}
-                  onOpenDeleteBoardModal={handleOpenDeleteBoardModal}
-                  onOpenDeleteLeadModal={handleOpenDeleteLeadModal}
-                />
-              </div>
-            );
-          })}
+          {currentWorkspace?.boards?.map((board, index) => (
+            <div key={board.id} className="w-64 md:w-72 lg:w-80 flex-shrink-0 h-full min-w-64 md:min-w-72 lg:min-w-80">
+              <BoardColumnWithPagination 
+                board={board} 
+                workspaceId={workspace.id}
+                onRefetch={(refetch, getLeads) => {
+                  boardRefs.current[board.id] = { refetch, getLeads };
+                }}
+                boardIndex={index}
+                onOpenCreateLeadModal={onOpenCreateLeadModal}
+                onOpenEditBoardModal={handleOpenEditBoardModal}
+                onOpenDeleteBoardModal={handleOpenDeleteBoardModal}
+                onOpenDeleteLeadModal={handleOpenDeleteLeadModal}
+              />
+            </div>
+          ))}
         </div>
 
         <DragOverlay dropAnimation={null}>
@@ -710,15 +693,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           ) : null}
         </DragOverlay>
 
-        {/* Global Loading Overlay */}
-        {isMovingLead && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 flex items-center space-x-3">
-              <LoadingSpinner size="md" />
-              <span className="text-lg font-medium">Lead ko'chirilmoqda...</span>
-            </div>
-          </div>
-        )}
+        {/* Global Loading Overlay - o'chirildi */}
       </DndContext>
 
       {/* Edit Board Modal */}

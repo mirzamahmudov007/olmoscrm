@@ -28,6 +28,11 @@ export const WorkspacePage: React.FC = () => {
     queryKey: QUERY_KEYS.WORKSPACE(id!),
     queryFn: () => workspaceService.getWorkspaceById(id!),
     enabled: !!id,
+    staleTime: 2 * 60 * 1000, // 2 daqiqa cache
+    gcTime: 5 * 60 * 1000, // 5 daqiqa garbage collection
+    refetchOnMount: false, // Mount'da refetch qilmaslik
+    refetchOnWindowFocus: false, // Window focus'da refetch qilmaslik
+    refetchOnReconnect: false, // Reconnect'da refetch qilmaslik
   });
 
   const handleUpdateWorkspace = (updatedWorkspace: Workspace) => {
@@ -72,15 +77,16 @@ export const WorkspacePage: React.FC = () => {
     setShowCreateLeadModal(true);
   };
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <LoadingSpinner size="lg" />
-        </div>
-      </Layout>
-    );
-  }
+  // Loading state'ni ko'rsatmaslik, optimistic UI ishlatish
+  // if (isLoading) {
+  //   return (
+  //     <Layout>
+  //       <div className="flex items-center justify-center h-64">
+  //         <LoadingSpinner size="lg" />
+  //       </div>
+  //     </Layout>
+  //   );
+  // }
 
   if (error) {
     const apiError = handleApiError(error);

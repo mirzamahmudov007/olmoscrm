@@ -26,6 +26,11 @@ export const WorkspacesPage: React.FC = () => {
   const { data: workspacesResponse, isLoading, error } = useQuery({
     queryKey: QUERY_KEYS.WORKSPACES,
     queryFn: () => workspaceService.getWorkspaces(1, 20),
+    staleTime: 5 * 60 * 1000, // 5 daqiqa cache
+    gcTime: 10 * 60 * 1000, // 10 daqiqa garbage collection
+    refetchOnMount: false, // Mount'da refetch qilmaslik
+    refetchOnWindowFocus: false, // Window focus'da refetch qilmaslik
+    refetchOnReconnect: false, // Reconnect'da refetch qilmaslik
   });
 
   const updateWorkspaceMutation = useMutation({
@@ -103,18 +108,19 @@ export const WorkspacesPage: React.FC = () => {
     'from-amber-500 to-orange-600',
   ];
 
-  if (isLoading) {
-    return (
-      <Layout>
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <div className="text-center">
-            <LoadingSpinner size="lg" />
-            <p className="mt-4 text-gray-600 text-lg">Ish maydonlari yuklanmoqda...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  // Loading state'ni ko'rsatmaslik, optimistic UI ishlatish
+  // if (isLoading) {
+  //   return (
+  //     <Layout>
+  //       <div className="min-h-[60vh] flex items-center justify-center">
+  //         <div className="text-center">
+  //           <LoadingSpinner size="lg" />
+  //           <p className="mt-4 text-gray-600 text-lg">Ish maydonlari yuklanmoqda...</p>
+  //         </div>
+  //       </div>
+  //     </Layout>
+  //   );
+  // }
 
   if (error) {
     const apiError = handleApiError(error);
