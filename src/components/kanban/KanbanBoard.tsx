@@ -27,6 +27,7 @@ import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { AlertTriangle, Trash2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface KanbanBoardProps {
   workspace: Workspace;
@@ -44,6 +45,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [tempWorkspace, setTempWorkspace] = useState<Workspace | null>(null);
   const [affectedBoardIds, setAffectedBoardIds] = useState<string[]>([]);
   const [overBoardId, setOverBoardId] = useState<string | null>(null);
+  
+  // Optimistic updates uchun yangi state'lar
+  const [optimisticUpdates, setOptimisticUpdates] = useState<{
+    [boardId: string]: {
+      leads: Lead[];
+      isUpdating: boolean;
+      timestamp: number;
+    }
+  }>({});
   
   // Modal states
   const [showEditBoardModal, setShowEditBoardModal] = useState(false);
@@ -66,6 +76,27 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       },
     })
   );
+
+  // Optimistic update'ni tozalash
+  const clearOptimisticUpdate = (boardId: string) => {
+    setOptimisticUpdates(prev => {
+      const newUpdates = { ...prev };
+      delete newUpdates[boardId];
+      return newUpdates;
+    });
+  };
+
+  // Optimistic update'ni qo'shish
+  const addOptimisticUpdate = (boardId: string, leads: Lead[]) => {
+    setOptimisticUpdates(prev => ({
+      ...prev,
+      [boardId]: {
+        leads,
+        isUpdating: true,
+        timestamp: Date.now()
+      }
+    }));
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -432,7 +463,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   ) => {
     console.log('TEST: handleMoveLeadBetweenBoards called with:', { leadId, oldBoardId, newBoardId });
     
-    // Loading state'lar olib tashlandi
+    // Optimistic updates uchun state'lar
     setAffectedBoardIds([oldBoardId, newBoardId]);
     
     try {
@@ -501,6 +532,18 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         return;
       }
 
+      // OPTIMISTIC UPDATE: UI'ni darhol yangilash
+      console.log('🎯 Optimistic update boshlandi...');
+      
+      // Eski board'dan lead'ni olib tashlash
+      const oldBoardOptimisticLeads = oldBoardLeads.filter((l: any) => l.id !== leadId);
+      addOptimisticUpdate(oldBoardId, oldBoardOptimisticLeads);
+      
+      // Yangi board'ga lead'ni qo'shish
+      const newBoardOptimisticLeads = [...(boardRefs.current[newBoardId]?.getLeads() || [])];
+      newBoardOptimisticLeads.splice(finalNewSortOrder, 0, { ...lead, sortOrder: finalNewSortOrder });
+      addOptimisticUpdate(newBoardId, newBoardOptimisticLeads);
+
       // Lead ko'chirish log'i
       console.log(`🚀 Lead "${lead.name}" ko'chirilmoqda: ${oldBoard.name} → ${newBoard.name}`);
       console.log(`📊 Sort orders: old=${oldSortOrder}, new=${finalNewSortOrder}`);
@@ -513,7 +556,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       
       toast.success('Lead muvaffaqiyatli ko\'chirildi!');
 
-          // Optimized cache invalidate - faqat cache tozalash
+      // Optimized cache invalidate - faqat cache tozalash
       console.log('🔄 Optimized cache invalidate boshlandi...');
 
       // Faqat kerakli board'lar uchun cache tozalash
@@ -529,11 +572,21 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       console.log('✅ Cache tozalandi, avtomatik refetch bo\'ladi');
 
+      // Optimistic update'ni tozalash (API muvaffaqiyatli bo'lgandan keyin)
+      setTimeout(() => {
+        clearOptimisticUpdate(oldBoardId);
+        clearOptimisticUpdate(newBoardId);
+        console.log('🧹 Optimistic updates tozalandi');
+      }, 1000); // 1 soniya keyin tozalash
       
     } catch (error) {
       const apiError = handleApiError(error);
       toast.error(apiError.message);
       console.error('❌ Lead ko\'chirishda xatolik:', error);
+      
+      // Xatolik bo'lsa optimistic update'larni tozalash
+      clearOptimisticUpdate(oldBoardId);
+      clearOptimisticUpdate(newBoardId);
     } finally {
       console.log('🧹 Cleaning up after lead move');
       // Temporary workspace'ni tozalash
@@ -697,23 +750,32 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         }}
       >
         <div className="flex gap-3 md:gap-4 overflow-x-auto pb-6 h-full w-full px-3 md:px-4">
-          {currentWorkspace?.boards?.map((board, index) => (
-            <div key={board.id} className="w-64 md:w-72 lg:w-80 flex-shrink-0 h-full min-w-64 md:min-w-72 lg:min-w-80">
-              <BoardColumnWithPagination 
-                board={board} 
-                workspaceId={workspace.id}
-                onRefetch={(refetch, getLeads) => {
-                  boardRefs.current[board.id] = { refetch, getLeads };
-                }}
-                boardIndex={index}
-                onOpenCreateLeadModal={onOpenCreateLeadModal}
-                onOpenEditBoardModal={handleOpenEditBoardModal}
-                onOpenDeleteBoardModal={handleOpenDeleteBoardModal}
-                onOpenDeleteLeadModal={handleOpenDeleteLeadModal}
-                isDragOverBoard={overBoardId === board.id}
-              />
-            </div>
-          ))}
+          {currentWorkspace?.boards?.map((board, index) => {
+            // Optimistic update ma'lumotlarini olish
+            const optimisticUpdate = optimisticUpdates[board.id];
+            const optimisticLeads = optimisticUpdate?.leads;
+            const isOptimisticUpdate = optimisticUpdate?.isUpdating || false;
+            
+            return (
+              <div key={board.id} className="w-64 md:w-72 lg:w-80 flex-shrink-0 h-full min-w-64 md:min-w-72 lg:min-w-80">
+                <BoardColumnWithPagination 
+                  board={board} 
+                  workspaceId={workspace.id}
+                  onRefetch={(refetch, getLeads) => {
+                    boardRefs.current[board.id] = { refetch, getLeads };
+                  }}
+                  boardIndex={index}
+                  onOpenCreateLeadModal={onOpenCreateLeadModal}
+                  onOpenEditBoardModal={handleOpenEditBoardModal}
+                  onOpenDeleteBoardModal={handleOpenDeleteBoardModal}
+                  onOpenDeleteLeadModal={handleOpenDeleteLeadModal}
+                  isDragOverBoard={overBoardId === board.id}
+                  optimisticLeads={optimisticLeads}
+                  isOptimisticUpdate={isOptimisticUpdate}
+                />
+              </div>
+            );
+          })}
         </div>
 
         <DragOverlay dropAnimation={null}>
@@ -724,7 +786,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           ) : null}
         </DragOverlay>
 
-        {/* Global Loading Overlay - o'chirildi */}
+        {/* Global Loading Overlay - olib tashlandi */}
+        {/* {Object.keys(optimisticUpdates).length > 0 && (
+          <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-40 pointer-events-none">
+            <div className="bg-white rounded-lg shadow-lg p-4 flex items-center space-x-3">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+              <span className="text-sm font-medium text-gray-700">Lead ko'chirilmoqda...</span>
+            </div>
+          </div>
+        )} */}
       </DndContext>
 
       {/* Edit Board Modal */}

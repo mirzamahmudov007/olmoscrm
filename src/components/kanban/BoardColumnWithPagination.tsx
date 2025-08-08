@@ -20,6 +20,9 @@ interface BoardColumnWithPaginationProps {
   onOpenDeleteBoardModal?: (board: Board) => void;
   onOpenDeleteLeadModal?: (lead: any) => void;
   isDragOverBoard?: boolean;
+  // Optimistic updates uchun yangi props'lar
+  optimisticLeads?: any[];
+  isOptimisticUpdate?: boolean;
 }
 
 export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps> = ({ 
@@ -31,7 +34,9 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   onOpenEditBoardModal,
   onOpenDeleteBoardModal,
   onOpenDeleteLeadModal,
-  isDragOverBoard = false
+  isDragOverBoard = false,
+  optimisticLeads,
+  isOptimisticUpdate = false
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -100,19 +105,19 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       return currentPage < lastPage.allPages ? currentPage + 1 : undefined;
     },
     initialPageParam: 1,
-    staleTime: 5 * 60 * 1000, // 5 daqiqa cache
-    gcTime: 15 * 60 * 1000, // 15 daqiqa cache
-    refetchOnMount: false, // Mount'da refetch qilmaslik
-    refetchOnWindowFocus: false, // Window focus'da refetch qilmaslik
-    refetchOnReconnect: false, // Reconnect'da refetch qilmaslik
-    placeholderData: (previousData) => previousData, // Oldingi ma'lumotlarni ko'rsatish
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    structuralSharing: false, // Ma'lumotlarni o'zgartirmaslik
+    enabled: !!workspaceId && !!board.id, // Faqat kerak bo'lganda ishlash
   });
 
   // Flatten all leads from all pages - optimistic UI uchun
   const allLeads = data?.pages.flatMap(page => page.data) || [];
   const leadIds = allLeads.map((lead) => lead.id);
   
-
+  // Optimistic leads'ni ishlatish agar mavjud bo'lsa
+  const displayLeads = optimisticLeads && optimisticLeads.length > 0 ? optimisticLeads : allLeads;
 
   // onRefetch prop'iga refetch funksiyasini o'tkazish
   React.useEffect(() => {
@@ -126,25 +131,17 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           return result;
         },
         () => {
-          console.log(`📋 Board "${board.name}" getLeads called, leads count:`, allLeads.length);
-          return allLeads;
+          console.log(`📋 Board "${board.name}" getLeads called, leads count:`, displayLeads.length);
+          return displayLeads;
         }
       );
     }
-  }, [onRefetch, refetch, allLeads]);
+  }, [onRefetch, refetch, displayLeads]);
 
   // Query data o'zgarishini kuzatish va avtomatik yangilash
   React.useEffect(() => {
-    console.log(`📊 Board "${board.name}" query data o'zgarishi:`, data?.pages?.length, 'pages', 'leads:', allLeads.length);
+    console.log(`📊 Board "${board.name}" query data o'zgarishi:`, data?.pages?.length, 'pages', 'leads:', displayLeads.length);
   }, [data, board.name]);
-
-  // Lead ko'chirilganda avtomatik refetch - o'chirildi
-  // React.useEffect(() => {
-  //   if (isMovingLead && movingLeadId) {
-  //     console.log(`🔄 Board "${board.name}" - lead ko'chirilganda avtomatik refetch`);
-  //     refetch();
-  //   }
-  // }, [isMovingLead, movingLeadId, board.name, refetch]);
 
   const getColumnColor = (boardName: string) => {
     const colors = {
@@ -180,8 +177,13 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     return '';
   };
 
-  // Optimistic UI - oldingi ma'lumotlarni har doim ko'rsatish
-  const displayLeads = allLeads;
+  // Optimistic update visual feedback - to'liq olib tashlandi
+  const getOptimisticStyles = () => {
+    // if (isOptimisticUpdate && optimisticLeads && optimisticLeads.length > 0) {
+    //   return 'opacity-90 bg-blue-50/10 border-blue-200';
+    // }
+    return '';
+  };
 
   // Error state'da ham board ko'rsatish, lekin error message qo'shish
   const hasError = !!error;
@@ -189,48 +191,55 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   return (
     <div 
       ref={setNodeRef}
-      className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-300 ${getDragOverStyles()}`}
+      className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-500 ease-out ${getDragOverStyles()} ${getOptimisticStyles()}`}
       style={{
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         zIndex: isDragOverBoard ? 20 : 1,
         boxShadow: isDragOverBoard ? '0 10px 25px -5px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        transform: isOptimisticUpdate ? 'scale(0.98)' : 'scale(1)',
       }}  
       role="region"
       aria-label={`${board.name} board - lead'larni tashlash uchun`}
       aria-dropped={isDragOverBoard ? 'true' : 'false'}
-
     >
-              <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0 transition-all duration-300 ${isDragOverBoard ? 'bg-blue-100/50 border-blue-300' : ''}`}>
-          <div className="flex items-center justify-betwee  n">
-            <div className="flex items-center space-x-3">
-              <h3 className={`font-semibold text-sm transition-all duration-300 ${isDragOverBoard ? 'text-blue-700' : ''}`}>
-                {boardIndex + 1}. {board.name}
-              </h3>
-              <div className="flex items-center space-x-1">
-                <Users size={14} />
-                <span className="text-sm font-medium">{displayLeads.length}</span>
-                {data?.pages[data.pages.length - 1]?.allElements && (
-                  <span className="text-xs text-gray-500">
-                    / {data.pages[data.pages.length - 1].allElements}
-                  </span>
-                )}
-                {hasError && (
-                  <span className="text-xs text-red-500 ml-1" title="Xatolik yuz berdi">
-                    ⚠️
-                  </span>
-                )}
-              </div>
+      <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0 transition-all duration-500 ${isDragOverBoard ? 'bg-blue-100/50 border-blue-300' : ''}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <h3 className={`font-semibold text-sm transition-all duration-300 ${isDragOverBoard ? 'text-blue-700' : ''}`}>
+              {boardIndex + 1}. {board.name}
+            </h3>
+            <div className="flex items-center space-x-1">
+              <Users size={14} />
+              <span className="text-sm font-medium">{displayLeads.length}</span>
+              {data?.pages[data.pages.length - 1]?.allElements && (
+                <span className="text-xs text-gray-500">
+                  / {data.pages[data.pages.length - 1].allElements}
+                </span>
+              )}
+              {hasError && (
+                <span className="text-xs text-red-500 ml-1" title="Xatolik yuz berdi">
+                  ⚠️
+                </span>
+              )}
+              {/* Optimistic update indicator - to'liq olib tashlandi */}
+              {/* {isOptimisticUpdate && optimisticLeads && optimisticLeads.length > 0 && (
+                <div className="flex items-center space-x-1 ml-2">
+                  <Loader2 size={10} className="animate-spin text-blue-500" />
+                  <span className="text-xs text-blue-600 font-medium">Yangilanmoqda...</span>
+                </div>
+              )} */}
             </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => refetch()}
-                className="p-1 hover:bg-white/50"
-                title="Refresh board"
-              >
-                <RefreshCw size={16} />
-              </Button>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => refetch()}
+              className="p-1 hover:bg-white/50"
+              title="Refresh board"
+            >
+              <RefreshCw size={16} />
+            </Button>
             <Button
               size="sm"
               variant="ghost"
@@ -277,8 +286,8 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
         </div>
       </div>
 
-              <div
-          className={`flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 transition-all duration-300 ${isDragOverBoard ? 'bg-blue-50/20' : ''}`}
+      <div
+        className={`flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 transition-all duration-500 ${isDragOverBoard ? 'bg-blue-50/20' : ''}`}
         onScroll={(e) => {
           const target = e.currentTarget;
           const { scrollTop, scrollHeight, clientHeight } = target;
@@ -290,6 +299,26 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           }
         }}
       >
+        {/* Loading state - to'liq olib tashlandi */}
+        {/* {isLoading && !data && (
+          <div className="flex justify-center py-8">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-2" />
+              <p className="text-sm text-gray-500">Lead'lar yuklanmoqda...</p>
+            </div>
+          </div>
+        )} */}
+
+        {/* Optimistic update overlay - to'liq olib tashlandi */}
+        {/* {isOptimisticUpdate && optimisticLeads && optimisticLeads.length > 0 && (
+          <div className="absolute inset-0 bg-blue-50/10 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+            <div className="text-center">
+              <Loader2 className="w-4 h-4 animate-spin text-blue-500 mx-auto mb-1" />
+              <p className="text-xs text-blue-600 font-medium">Yangilanmoqda...</p>
+            </div>
+          </div>
+        )} */}
+
         <SortableContext items={displayLeads.map(l => l.id)} strategy={verticalListSortingStrategy}>
           {displayLeads.map((lead) => (
             <LeadCard 
@@ -312,15 +341,15 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           </div>
         )}
 
-                  {displayLeads.length === 0 && (
-            <div className={`text-center py-8 transition-all duration-300 ${isDragOverBoard ? 'text-blue-600' : 'text-gray-500'}`}>
-                          <Users size={32} className={`mx-auto mb-2 transition-all duration-300 ${isDragOverBoard ? 'opacity-80 text-blue-500' : 'opacity-50'}`} />
+        {displayLeads.length === 0 && (
+          <div className={`text-center py-8 transition-all duration-300 ${isDragOverBoard ? 'text-blue-600' : 'text-gray-500'}`}>
+            <Users size={32} className={`mx-auto mb-2 transition-all duration-300 ${isDragOverBoard ? 'opacity-80 text-blue-500' : 'opacity-50'}`} />
             <p className="text-sm">Lead'lar yo'q</p>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => onOpenCreateLeadModal ? onOpenCreateLeadModal(board.id) : setShowCreateModal(true)}
-                              className={`mt-2 transition-all duration-300 ${isDragOverBoard ? 'text-blue-600 hover:text-blue-700' : ''}`}
+              className={`mt-2 transition-all duration-300 ${isDragOverBoard ? 'text-blue-600 hover:text-blue-700' : ''}`}
             >
               <Plus size={14} className="mr-1" />
               Lead qo'shish
