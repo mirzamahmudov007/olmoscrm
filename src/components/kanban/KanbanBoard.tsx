@@ -9,6 +9,8 @@ import {
   useSensor,
   useSensors,
   closestCorners,
+  rectIntersection,
+  MeasuringStrategy,
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useState } from 'react';
@@ -41,6 +43,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [tempWorkspace, setTempWorkspace] = useState<Workspace | null>(null);
   const [affectedBoardIds, setAffectedBoardIds] = useState<string[]>([]);
+  const [overBoardId, setOverBoardId] = useState<string | null>(null);
   
   // Modal states
   const [showEditBoardModal, setShowEditBoardModal] = useState(false);
@@ -84,7 +87,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    if (!over) return;
+    if (!over) {
+      setOverBoardId(null);
+      return;
+    }
 
     const activeId = active.id as string;
     const overId = over.id as string;
@@ -105,6 +111,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         overBoard = overLeadBoard;
         isOverBoard = false; // overId lead ID ekanligini belgilash
       }
+    }
+    
+    // overBoardId'ni yangilash
+    if (overBoard) {
+      setOverBoardId(overBoard.id);
+    } else {
+      setOverBoardId(null);
     }
 
     console.log('TEST: DragOver - activeBoard:', activeBoard?.name, 'overBoard:', overBoard?.name, 'isOverBoard:', isOverBoard);
@@ -195,6 +208,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const { active, over } = event;
     setActiveId(null);
     setActiveLead(null);
+    setOverBoardId(null); // Drag tugaganda overBoardId'ni tozalash
 
     console.log('TEST: Drag end - active:', active.id, 'over:', over?.id);
 
@@ -281,13 +295,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       console.log('TEST: Board IDs comparison:', { activeBoardId: activeBoard.id, overBoardId: overBoard.id });
       console.log('TEST: Will call handleMoveLeadBetweenBoards');
       
+      // Drop position'ni hisoblash
+      const dropPosition = !isOverBoard ? 0 : 0; // Hozircha faqat oxiriga qo'yish
+      
       // Lead'ni ko'chirish
       console.log('TEST: About to call handleMoveLeadBetweenBoards with:', {
         leadId: activeId,
         oldBoardId: activeBoard.id,
-        newBoardId: overBoard.id
+        newBoardId: overBoard.id,
+        dropPosition
       });
-      await handleMoveLeadBetweenBoards(activeId, activeBoard.id, overBoard.id);
+      await handleMoveLeadBetweenBoards(activeId, activeBoard.id, overBoard.id, dropPosition);
       setTempWorkspace(null);
       return;
     }
@@ -311,13 +329,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     if (!isOverBoard && activeBoard.id !== overBoard.id) {
       console.log('TEST: Dropping lead onto another lead in different board - from:', activeBoard.name, 'to:', overBoard.name);
       
+      // Drop position'ni hisoblash - lead ustiga tushgan
+      const dropPosition = 0; // Lead ustiga tushgan, shuning uchun 0 position
+      
       // Lead'ni ko'chirish
       console.log('TEST: About to call handleMoveLeadBetweenBoards for lead-to-lead with:', {
         leadId: activeId,
         oldBoardId: activeBoard.id,
-        newBoardId: overBoard.id
+        newBoardId: overBoard.id,
+        dropPosition
       });
-      await handleMoveLeadBetweenBoards(activeId, activeBoard.id, overBoard.id);
+      await handleMoveLeadBetweenBoards(activeId, activeBoard.id, overBoard.id, dropPosition);
       setTempWorkspace(null);
       return;
     }
@@ -405,7 +427,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const handleMoveLeadBetweenBoards = async (
     leadId: string,
     oldBoardId: string,
-    newBoardId: string
+    newBoardId: string,
+    dropPosition?: number
   ) => {
     console.log('TEST: handleMoveLeadBetweenBoards called with:', { leadId, oldBoardId, newBoardId });
     
@@ -456,10 +479,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       }
 
       // Yangi sort order'ni hisoblash
-      // tempWorkspace'da lead allaqachon ko'shilgan bo'lishi mumkin
-      const finalNewSortOrder = tempWorkspace ? 
-        (tempWorkspace.boards.find(b => b.id === newBoardId)?.leads?.length || 0) - 1 : 
-        newBoardLeadsCount;
+      let finalNewSortOrder = newBoardLeadsCount; // Default: oxiriga
+      
+      // Agar drop position berilgan bo'lsa, uni ishlatish
+      if (dropPosition !== undefined && dropPosition >= 0 && dropPosition <= newBoardLeadsCount) {
+        finalNewSortOrder = dropPosition;
+      }
       
       console.log('📊 Sort order calculation:', { 
         tempWorkspace: !!tempWorkspace, 
@@ -661,10 +686,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     <div className="h-full w-full">
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={rectIntersection}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
+        measuring={{
+          droppable: {
+            strategy: MeasuringStrategy.Always
+          }
+        }}
       >
         <div className="flex gap-3 md:gap-4 overflow-x-auto pb-6 h-full w-full px-3 md:px-4">
           {currentWorkspace?.boards?.map((board, index) => (
@@ -680,6 +710,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 onOpenEditBoardModal={handleOpenEditBoardModal}
                 onOpenDeleteBoardModal={handleOpenDeleteBoardModal}
                 onOpenDeleteLeadModal={handleOpenDeleteLeadModal}
+                isDragOverBoard={overBoardId === board.id}
               />
             </div>
           ))}

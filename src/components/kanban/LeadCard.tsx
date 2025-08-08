@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
-import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { Phone, FileText, GripVertical, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Card } from '../ui/Card';
@@ -32,10 +31,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
     },
   });
 
-  // Lead'ni drop zone qilish uchun
-  const { setNodeRef: setDroppableRef } = useDroppable({
-    id: `lead-${lead.id}`,
-  });
+
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -86,10 +82,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
 
   return (
     <div
-      ref={(node) => {
-        setNodeRef(node);
-        setDroppableRef(node);
-      }}
+      ref={setNodeRef}
       style={{
         ...style,
         zIndex: isDragging ? 9999 : 'auto',

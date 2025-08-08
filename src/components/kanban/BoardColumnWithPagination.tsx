@@ -19,6 +19,7 @@ interface BoardColumnWithPaginationProps {
   onOpenEditBoardModal?: (board: Board) => void;
   onOpenDeleteBoardModal?: (board: Board) => void;
   onOpenDeleteLeadModal?: (lead: any) => void;
+  isDragOverBoard?: boolean;
 }
 
 export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps> = ({ 
@@ -29,7 +30,8 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   onOpenCreateLeadModal,
   onOpenEditBoardModal,
   onOpenDeleteBoardModal,
-  onOpenDeleteLeadModal
+  onOpenDeleteLeadModal,
+  isDragOverBoard = false
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -45,6 +47,17 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     },
     disabled: false, // Drop zone har doim faol
   });
+  
+  // Debug uchun isOver o'zgarishini kuzatish
+  React.useEffect(() => {
+    if (isOver) {
+      console.log(`🎯 Board "${board.name}" isOver: true`);
+    }
+  }, [isOver, board.name]);
+  
+
+  
+
   
   // Debug uchun isOver o'zgarishini kuzatish
   React.useEffect(() => {
@@ -69,7 +82,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
     };
   }, []);
 
-  // Infinite query for leads - optimized
+  // Infinite query for leads - optimistic UI uchun optimizatsiya
   const {
     data,
     fetchNextPage,
@@ -87,16 +100,19 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
       return currentPage < lastPage.allPages ? currentPage + 1 : undefined;
     },
     initialPageParam: 1,
-    staleTime: 30000, // 30 soniya cache
-    gcTime: 5 * 60 * 1000, // 5 daqiqa cache
+    staleTime: 5 * 60 * 1000, // 5 daqiqa cache
+    gcTime: 15 * 60 * 1000, // 15 daqiqa cache
     refetchOnMount: false, // Mount'da refetch qilmaslik
     refetchOnWindowFocus: false, // Window focus'da refetch qilmaslik
     refetchOnReconnect: false, // Reconnect'da refetch qilmaslik
+    placeholderData: (previousData) => previousData, // Oldingi ma'lumotlarni ko'rsatish
   });
 
-  // Flatten all leads from all pages
+  // Flatten all leads from all pages - optimistic UI uchun
   const allLeads = data?.pages.flatMap(page => page.data) || [];
   const leadIds = allLeads.map((lead) => lead.id);
+  
+
 
   // onRefetch prop'iga refetch funksiyasini o'tkazish
   React.useEffect(() => {
@@ -158,14 +174,14 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
 
   // Drag over visual feedback - optimized
   const getDragOverStyles = () => {
-    if (isOver) {
-      return 'ring-2 ring-blue-400 ring-opacity-50 bg-blue-5  0/20 shadow-md border-blue-300';
+    if (isDragOverBoard) {
+      return 'ring-4 ring-blue-500 ring-opacity-70 bg-blue-50/30 shadow-xl border-blue-400';
     }
     return '';
   };
 
-  // Loading state'ni ko'rsatmaslik, optimistic UI ishlatish
-  const displayLeads = isLoading ? [] : allLeads;
+  // Optimistic UI - oldingi ma'lumotlarni har doim ko'rsatish
+  const displayLeads = allLeads;
 
   // Error state'da ham board ko'rsatish, lekin error message qo'shish
   const hasError = !!error;
@@ -173,28 +189,29 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   return (
     <div 
       ref={setNodeRef}
-      className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-200 ${getDragOverStyles()}`}
-              style={{
-          transform: isOver ? 'scale(1.02)' : 'scale(1)',
-          transition: 'all 0.2s ease-in-out',
-          zIndex: isOver ? 10 : 1
-        }}  
+      className={`bg-white rounded-xl border-2 ${getColumnColor(board.name)} shadow-sm h-full flex flex-col transition-all duration-300 ${getDragOverStyles()}`}
+      style={{
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        zIndex: isDragOverBoard ? 20 : 1,
+        boxShadow: isDragOverBoard ? '0 10px 25px -5px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+      }}  
       role="region"
       aria-label={`${board.name} board - lead'larni tashlash uchun`}
-      aria-dropped={isOver ? 'true' : 'false'}
+      aria-dropped={isDragOverBoard ? 'true' : 'false'}
+
     >
-              <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0`}>
+              <div className={`p-3 border-b border-opacity-20 ${getHeaderColor(board.name)} rounded-t-xl flex-shrink-0 transition-all duration-300 ${isDragOverBoard ? 'bg-blue-100/50 border-blue-300' : ''}`}>
           <div className="flex items-center justify-betwee  n">
             <div className="flex items-center space-x-3">
-              <h3 className="font-semibold text-sm">
+              <h3 className={`font-semibold text-sm transition-all duration-300 ${isDragOverBoard ? 'text-blue-700' : ''}`}>
                 {boardIndex + 1}. {board.name}
               </h3>
               <div className="flex items-center space-x-1">
                 <Users size={14} />
                 <span className="text-sm font-medium">{displayLeads.length}</span>
-                {data?.pages[data.pages.length - 1]?.allPages && (
+                {data?.pages[data.pages.length - 1]?.allElements && (
                   <span className="text-xs text-gray-500">
-                    / {data.pages[data.pages.length - 1].allPages * 10}
+                    / {data.pages[data.pages.length - 1].allElements}
                   </span>
                 )}
                 {hasError && (
@@ -260,8 +277,8 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
         </div>
       </div>
 
-      <div
-        className="flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+              <div
+          className={`flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 transition-all duration-300 ${isDragOverBoard ? 'bg-blue-50/20' : ''}`}
         onScroll={(e) => {
           const target = e.currentTarget;
           const { scrollTop, scrollHeight, clientHeight } = target;
@@ -295,15 +312,15 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
           </div>
         )}
 
-        {displayLeads.length === 0 && !isLoading && (
-          <div className="text-center py-8 text-gray-500">
-            <Users size={32} className="mx-auto mb-2 opacity-50" />
+                  {displayLeads.length === 0 && (
+            <div className={`text-center py-8 transition-all duration-300 ${isDragOverBoard ? 'text-blue-600' : 'text-gray-500'}`}>
+                          <Users size={32} className={`mx-auto mb-2 transition-all duration-300 ${isDragOverBoard ? 'opacity-80 text-blue-500' : 'opacity-50'}`} />
             <p className="text-sm">Lead'lar yo'q</p>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => onOpenCreateLeadModal ? onOpenCreateLeadModal(board.id) : setShowCreateModal(true)}
-              className="mt-2"
+                              className={`mt-2 transition-all duration-300 ${isDragOverBoard ? 'text-blue-600 hover:text-blue-700' : ''}`}
             >
               <Plus size={14} className="mr-1" />
               Lead qo'shish
