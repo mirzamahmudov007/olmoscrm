@@ -18,6 +18,7 @@ interface BoardColumnWithPaginationProps {
   onOpenCreateLeadModal?: (boardId: string) => void;
   onOpenEditBoardModal?: (board: Board) => void;
   onOpenDeleteBoardModal?: (board: Board) => void;
+  onOpenEditLeadModal?: (lead: any) => void;
   onOpenDeleteLeadModal?: (lead: any) => void;
   isDragOverBoard?: boolean;
   // Optimistic updates uchun yangi props'lar
@@ -33,6 +34,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
   onOpenCreateLeadModal,
   onOpenEditBoardModal,
   onOpenDeleteBoardModal,
+  onOpenEditLeadModal,
   onOpenDeleteLeadModal,
   isDragOverBoard = false,
   optimisticLeads,
@@ -324,6 +326,7 @@ export const BoardColumnWithPagination: React.FC<BoardColumnWithPaginationProps>
             <LeadCard 
               key={lead.id} 
               lead={lead}
+              onOpenEditLeadModal={onOpenEditLeadModal}
               onOpenDeleteLeadModal={onOpenDeleteLeadModal}
             />
           ))}

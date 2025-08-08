@@ -20,6 +20,8 @@ import { Workspace, Lead } from '../../types';
 import { BoardColumnWithPagination } from './BoardColumnWithPagination';
 import { LeadCard } from './LeadCard';
 import { EditBoardModal } from '../modals/EditBoardModal';
+import { EditLeadModal } from '../modals/EditLeadModal';
+import { DeleteLeadModal } from '../modals/DeleteLeadModal';
 import { workspaceService } from '../../services/workspaceService';
 import { handleApiError } from '../../services/api';
 import { QUERY_KEYS } from '../../config/constants';
@@ -58,6 +60,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // Modal states
   const [showEditBoardModal, setShowEditBoardModal] = useState(false);
   const [showDeleteBoardModal, setShowDeleteBoardModal] = useState(false);
+  const [showEditLeadModal, setShowEditLeadModal] = useState(false);
   const [showDeleteLeadModal, setShowDeleteLeadModal] = useState(false);
   const [selectedBoard, setSelectedBoard] = useState<any>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -612,7 +615,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     setShowDeleteBoardModal(true);
   };
 
-  // Lead delete handlers
+  // Lead edit/delete handlers
+  const handleOpenEditLeadModal = (lead: Lead) => {
+    setSelectedLead(lead);
+    setShowEditLeadModal(true);
+  };
+
   const handleOpenDeleteLeadModal = (lead: Lead) => {
     setSelectedLead(lead);
     setShowDeleteLeadModal(true);
@@ -629,29 +637,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       toast.success('Board muvaffaqiyatli o\'chirildi! 🗑️');
       setShowDeleteBoardModal(false);
       setSelectedBoard(null);
-    } catch (error) {
-      const apiError = handleApiError(error);
-      toast.error(apiError.message);
-    }
-  };
-
-  // Delete lead mutation
-  const deleteLeadMutation = async (leadId: string) => {
-    try {
-      await workspaceService.deleteLead(leadId);
-      
-      // Faqat kerakli board uchun invalidate qilish
-      const leadBoard = findBoardByLeadIdFromWorkspace(leadId, workspace);
-      if (leadBoard) {
-        queryClient.invalidateQueries({ 
-          queryKey: QUERY_KEYS.LEADS_INFINITE(workspace.id, leadBoard.id),
-          exact: true
-        });
-      }
-      
-      toast.success('Lead muvaffaqiyatli o\'chirildi! 🗑️');
-      setShowDeleteLeadModal(false);
-      setSelectedLead(null);
     } catch (error) {
       const apiError = handleApiError(error);
       toast.error(apiError.message);
@@ -773,6 +758,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   onOpenCreateLeadModal={onOpenCreateLeadModal}
                   onOpenEditBoardModal={handleOpenEditBoardModal}
                   onOpenDeleteBoardModal={handleOpenDeleteBoardModal}
+                  onOpenEditLeadModal={handleOpenEditLeadModal}
                   onOpenDeleteLeadModal={handleOpenDeleteLeadModal}
                   isDragOverBoard={overBoardId === board.id}
                   optimisticLeads={optimisticLeads}
@@ -786,7 +772,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         <DragOverlay dropAnimation={null}>
           {activeId && activeLead ? (
             <div className="transform rotate-1 scale-105 shadow-lg">
-              <LeadCard lead={activeLead} onOpenDeleteLeadModal={handleOpenDeleteLeadModal} />
+              <LeadCard 
+                lead={activeLead} 
+                onOpenEditLeadModal={handleOpenEditLeadModal}
+                onOpenDeleteLeadModal={handleOpenDeleteLeadModal} 
+              />
             </div>
           ) : null}
         </DragOverlay>
@@ -810,6 +800,28 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           setSelectedBoard(null);
         }}
         board={selectedBoard}
+        workspaceId={workspace.id}
+      />
+
+      {/* Edit Lead Modal */}
+      <EditLeadModal
+        isOpen={showEditLeadModal}
+        onClose={() => {
+          setShowEditLeadModal(false);
+          setSelectedLead(null);
+        }}
+        lead={selectedLead}
+        workspaceId={workspace.id}
+      />
+
+      {/* Delete Lead Modal */}
+      <DeleteLeadModal
+        isOpen={showDeleteLeadModal}
+        onClose={() => {
+          setShowDeleteLeadModal(false);
+          setSelectedLead(null);
+        }}
+        lead={selectedLead}
         workspaceId={workspace.id}
       />
 
@@ -846,50 +858,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   onClick={() => {
                     setShowDeleteBoardModal(false);
                     setSelectedBoard(null);
-                  }}
-                  className="flex-1"
-                >
-                  Bekor qilish
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Delete Lead Confirmation Modal */}
-      {showDeleteLeadModal && selectedLead && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md bg-white">
-            <div className="p-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertTriangle size={24} className="text-red-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Lead'ni O'chirish
-                </h3>
-                <p className="text-gray-600">
-                  "<strong>{selectedLead.name}</strong>" lead'ini o'chirishni xohlaysizmi?
-                </p>
-                <p className="text-sm text-red-600 mt-2">
-                  Bu amalni qaytarib bo'lmaydi!
-                </p>
-              </div>
-              
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => deleteLeadMutation(selectedLead.id)}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <Trash2 size={16} className="mr-2" />
-                  O'chirish
-                </Button>
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setShowDeleteLeadModal(false);
-                    setSelectedLead(null);
                   }}
                   className="flex-1"
                 >

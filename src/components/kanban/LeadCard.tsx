@@ -7,13 +7,16 @@ import { Lead } from '../../types';
 
 interface LeadCardProps {
   lead: Lead;
+  onOpenEditLeadModal?: (lead: Lead) => void;
   onOpenDeleteLeadModal?: (lead: Lead) => void;
 }
 
-export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal }) => {
+export const LeadCard: React.FC<LeadCardProps> = ({ 
+  lead, 
+  onOpenEditLeadModal,
+  onOpenDeleteLeadModal 
+}) => {
   const [showMenu, setShowMenu] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editedLead, setEditedLead] = useState(lead);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -114,7 +117,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
   };
 
   const handleEdit = () => {
-    setShowEditModal(true);
+    onOpenEditLeadModal ? onOpenEditLeadModal(lead) : console.log('Edit lead');
     setShowMenu(false);
   };
 
@@ -141,7 +144,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
           cursor: 'default',
         }}
         role="article"
-        aria-label={`${editedLead.name} lead karti`}
+        aria-label={`${lead.name} lead karti`}
       >
         {/* Drop zone indicator */}
         <div className="absolute inset-0 pointer-events-none bg-transparent hover:bg-blue-50/20 transition-colors duration-200" />
@@ -151,7 +154,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
             {/* FIO va actions */}
             <div className="flex items-start justify-between">
               <h4 className="font-semibold text-gray-900 text-sm leading-tight flex-1 mr-2 break-words">
-                {editedLead.name || 'Ism kiritilmagan'}
+                {lead.name || 'Ism kiritilmagan'}
               </h4>
               <div className="flex items-center space-x-1 flex-shrink-0">
                 <button
@@ -159,7 +162,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
                   {...listeners}
                   className="text-gray-400 hover:text-gray-600 cursor-grab p-1.5 rounded hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 active:cursor-grabbing disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{ touchAction: 'none' }}
-                  aria-label={`${editedLead.name} lead'ni sudrab o'tkazish`}
+                  aria-label={`${lead.name} lead'ni sudrab o'tkazish`}
                   title="Sudrab o'tkazish uchun ushlab turib bosing"
                   disabled={isDragging}
                   onKeyDown={(e) => {
@@ -210,11 +213,11 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
             </div>
 
             {/* Kasallik tashxisi */}
-            {editedLead.disease && editedLead.disease.trim() && (
+            {lead.disease && lead.disease.trim() && (
               <div className="flex items-start space-x-1.5 text-xs text-gray-600 min-h-[16px]">
                 <FileText size={11} className="text-green-500 mt-0.5 flex-shrink-0" />
                 <span className="leading-relaxed font-medium break-words">
-                  {editedLead.disease}
+                  {lead.disease}
                 </span>
               </div>
             )}
@@ -223,102 +226,33 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDeleteLeadModal 
             <div className="flex items-center space-x-1.5 text-xs text-gray-600 min-h-[16px]">
               <Phone size={11} className="text-blue-500 flex-shrink-0" />
               <span className="font-mono break-all">
-                {formatPhone(editedLead.phone)}
+                {formatPhone(lead.phone)}
               </span>
             </div>
 
             {/* Yaratilgan vaqt */}
-            {editedLead.createdAt && (
+            {lead.createdAt && (
               <div className="space-y-1">
                 <div className="flex items-center space-x-1.5 text-xs text-gray-500 min-h-[16px]">
                   <Clock size={11} className="text-gray-400 flex-shrink-0" />
                   <span className="font-medium">
-                    {formatDate(editedLead.createdAt)}
+                    {formatDate(lead.createdAt)}
                   </span>
                 </div>
               </div>
             )}
 
             {/* Izoh - faqat qisqa */}
-            {editedLead.note && editedLead.note.trim() && (
+            {lead.note && lead.note.trim() && (
               <div className="bg-gray-50 rounded p-1.5 min-h-[32px]">
                 <p className="text-xs text-gray-700 leading-relaxed line-clamp-2 break-words">
-                  {editedLead.note}
+                  {lead.note}
                 </p>
               </div>
             )}
           </div>
-
-          {/* Loading indicator - o'chirildi */}
         </div>
       </Card>
-
-      {/* Edit Lead Modal */}
-      {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-h-[80vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Lead ma'lumotlarini o'zgartirish</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ism</label>
-                <input
-                  type="text"
-                  value={editedLead.name}
-                  onChange={(e) => setEditedLead({...editedLead, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
-                <input
-                  type="text"
-                  value={editedLead.phone}
-                  onChange={(e) => setEditedLead({...editedLead, phone: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Kasallik</label>
-                <input
-                  type="text"
-                  value={editedLead.disease}
-                  onChange={(e) => setEditedLead({...editedLead, disease: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Izoh</label>
-                <textarea
-                  value={editedLead.note}
-                  onChange={(e) => setEditedLead({...editedLead, note: e.target.value})}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-3 mt-6">
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditedLead(lead);
-                }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Bekor qilish
-              </button>
-              <button
-                onClick={() => {
-                  // Save logic
-                  setShowEditModal(false);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Saqlash
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
